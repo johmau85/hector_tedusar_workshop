@@ -41,5 +41,11 @@
   <xacro:schunk_lwa4p name="arm" parent="base_link">
     <origin xyz="0 0 0.5" rpy="0 0 0" />
   </xacro:schunk_lwa4p>
+  
+  <xacro:include filename="$(find schunk_lwa4p_control)/urdf/wsg_50.urdf.xacro" />
+  
+  <xacro:wsg_50_xacro name="gripper" parent="arm_6_link">
+    <origin xyz="0 0 0.08" rpy="0 0 1.570796" />
+  </xacro:wsg_50_xacro>
 
 </robot>

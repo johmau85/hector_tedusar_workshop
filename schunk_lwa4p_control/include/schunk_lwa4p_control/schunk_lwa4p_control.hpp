@@ -43,6 +43,7 @@
 #include <hardware_interface/joint_command_interface.h>
 #include <hardware_interface/joint_state_interface.h>
 #include <hardware_interface/robot_hw.h>
+#include <schunk_lwa4p_control/weiss_wsg_gripper_control.hpp>
 
 namespace schunk_lwa4p_control
 {
@@ -59,8 +60,11 @@ public:
 private:
     ros::NodeHandle nh_;
 
+    schunk_lwa4p_control::WeissWsgGripperControl weiss_wsg_gripper_;
+
     hardware_interface::JointStateInterface joint_state_interface_;
     hardware_interface::VelocityJointInterface velocity_joint_interface_;
+    hardware_interface::PositionJointInterface position_joint_interface_;
 
     std::map<std::string, double> joint_vel_cmds_;
     std::map<std::string, double> joint_positions_;
