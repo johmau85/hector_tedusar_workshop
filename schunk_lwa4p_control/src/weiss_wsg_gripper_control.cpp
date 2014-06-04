@@ -26,10 +26,15 @@ void WeissWsgGripperControl::initialize(hardware_interface::RobotHW & robot_hw, 
 
     std::ostringstream ss;
     ss << "ipa_canopen:" << parameters.can_id_;
+    ROS_INFO("creating gripper instance with transport URI %s", ss.str().c_str());
     gripper_ = boost::make_shared<weiss_wsg_gripper::Gripper>(ss.str());
+    ROS_INFO("connecting to gripper...");
     gripper_->connect();
+    ROS_INFO("acknowledging fast stop...");
     gripper_->acknowledgeFastStop();
+    ROS_INFO("setting force limit...");
     gripper_->setForceLimit(parameters.default_effort_);
+    ROS_INFO("executing homing sequence...");
     gripper_->executeHomingSequence(weiss_wsg_gripper::Gripper::HOMING_DIRECTION_DEFAULT);
 }
 
