@@ -52,16 +52,22 @@ class SchunkLWA4P : public hardware_interface::RobotHW
 public:
     SchunkLWA4P();
 
+    void read();
+
+    void write();
+
 private:
     ros::NodeHandle nh_;
 
-    hardware_interface::JointStateInterface joint_state_interface;
-    hardware_interface::PositionJointInterface joint_pos_interface;
+    hardware_interface::JointStateInterface joint_state_interface_;
+    hardware_interface::VelocityJointInterface velocity_joint_interface_;
 
-    double cmd[2];
-    double pos[2];
-    double vel[2];
-    double eff[2];
+    std::map<std::string, double> joint_vel_cmds_;
+    std::map<std::string, double> joint_positions_;
+    std::map<std::string, double> joint_velocitys_;
+    std::map<std::string, double> joint_efforts_;
+
+    std::string chain_name_;
 };
 
 }

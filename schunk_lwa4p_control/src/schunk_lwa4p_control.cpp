@@ -59,13 +59,11 @@ SchunkLWA4P::SchunkLWA4P()
     private_nh.param<std::string>("baudrate", baudrate, std::string("500K"));
     canopen::baudRate = baudrate;
 
-    std::string chain_name;
-    private_nh.param<std::string>("chain_name", chain_name, std::string("arm_controller"));
-
+    private_nh.param<std::string>("chain_name", chain_name_, std::string("arm_controller"));
 
     std::vector<std::string> joint_names;
 
-    std::string param = chain_name + "/joint_names";
+    std::string param = chain_name_ + "/joint_names";
     XmlRpc::XmlRpcValue joint_names_xmlrpc;
     if (private_nh.hasParam(param))
     {
@@ -84,7 +82,7 @@ SchunkLWA4P::SchunkLWA4P()
 
     int DOF = joint_names.size();
 
-    param = chain_name + "/module_ids";
+    param = chain_name_ + "/module_ids";
     XmlRpc::XmlRpcValue module_ids_xmlrpc;
     if (private_nh.hasParam(param))
     {
@@ -110,10 +108,10 @@ SchunkLWA4P::SchunkLWA4P()
 
     for (unsigned int i=0; i<joint_names.size(); i++)
     {
-        canopen::devices[ module_ids[i] ] = canopen::Device(module_ids[i], joint_names[i], chain_name);
+        canopen::devices[ module_ids[i] ] = canopen::Device(module_ids[i], joint_names[i], chain_name_);
     }
 
-    canopen::deviceGroups[ chain_name ] = canopen::DeviceGroup(module_ids, joint_names);
+    canopen::deviceGroups[ chain_name_ ] = canopen::DeviceGroup(module_ids, joint_names);
 
     canopen::sendPos = canopen::defaultPDOOutgoing_interpolated;
     for(auto it : canopen::devices)
@@ -123,7 +121,7 @@ SchunkLWA4P::SchunkLWA4P()
         canopen::incomingEMCYHandlers[ 0x081 + it.first ] = [it](const TPCANRdMsg mE) { canopen::defaultEMCY_incoming( it.first, mE ); };
     }
 
-    bool init_success = canopen::init(device, chain_name, canopen::syncInterval);
+    bool init_success = canopen::init(device, chain_name_, canopen::syncInterval);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
     if(!init_success)
@@ -132,24 +130,46 @@ SchunkLWA4P::SchunkLWA4P()
         throw std::runtime_error("This chain could not be initialized. Check for possible errors and try to initialize it again.");
     }
 
+    for(unsigned int i=0; i<joint_names.size(); i++)
+    {
+        joint_vel_cmds_[joint_names[i]] = 0.0;
+        joint_positions_[joint_names[i]] = 0.0;
+        joint_velocitys_[joint_names[i]] = 0.0;
+        joint_efforts_[joint_names[i]] = 0.0;
 
-//    // connect and register the joint state interface
-//    hardware_interface::JointStateHandle state_handle_a("A", &pos[0], &vel[0], &eff[0]);
-//    jnt_state_interface.registerHandle(state_handle_a);
+        hardware_interface::JointStateHandle state_handle(joint_names[i], &joint_positions_[joint_names[i]], &joint_velocitys_[joint_names[i]], &joint_efforts_[joint_names[i]]);
+        joint_state_interface_.registerHandle(state_handle);
 
-//    hardware_interface::JointStateHandle state_handle_b("B", &pos[1], &vel[1], &eff[1]);
-//    jnt_state_interface.registerHandle(state_handle_b);
 
-//    registerInterface(&jnt_state_interface);
+        hardware_interface::JointHandle vel_handle(joint_state_interface_.getHandle(joint_names[i]), &joint_vel_cmds_[joint_names[i]]);
+        velocity_joint_interface_.registerHandle(vel_handle);
+    }
 
-//    // connect and register the joint position interface
-//    hardware_interface::JointHandle pos_handle_a(jnt_state_interface.getHandle("A"), &cmd[0]);
-//    jnt_pos_interface.registerHandle(pos_handle_a);
+    registerInterface(&joint_state_interface_);
+    registerInterface(&velocity_joint_interface_);
+}
 
-//    hardware_interface::JointHandle pos_handle_b(jnt_state_interface.getHandle("B"), &cmd[1]);
-//    jnt_pos_interface.registerHandle(pos_handle_b);
+void SchunkLWA4P::read()
+{
+    canopen::DeviceGroup dg = canopen::deviceGroups[chain_name_];
 
-//    registerInterface(&jnt_pos_interface);
+    for (auto id : dg.getCANids())
+    {
+        std::string joint_name = canopen::devices[id].getName();
+        joint_positions_[joint_name] = canopen::devices[id].getActualPos();
+        joint_velocitys_[joint_name] = canopen::devices[id].getActualVel();
+    }
+}
+
+void SchunkLWA4P::write()
+{
+    std::vector<double> velocities;
+
+    for( std::map<std::string, double>::iterator it = joint_vel_cmds_.begin(); it != joint_vel_cmds_.end(); ++it ) {
+        velocities.push_back( it->second );
+    }
+
+    canopen::deviceGroups[chain_name_].setVel(velocities);
 }
 
 }  // end namespace schunk_lwa4p_control
@@ -164,6 +184,9 @@ int main(int argc, char** argv)
 
         controller_manager::ControllerManager cm(&schunk_lwa4p);
 
+        ros::AsyncSpinner spinner(4);
+        spinner.start();
+
         double lr = 1000.0 / std::chrono::duration_cast<std::chrono::milliseconds>(canopen::syncInterval).count();
 
         ros::Rate loop_rate(lr);
@@ -173,15 +196,14 @@ int main(int argc, char** argv)
         while (ros::ok())
         {
             loop_rate.sleep();
+
             ros::Time current_time = ros::Time::now();
-            ros::Duration elapsed_time = ros::Duration(current_time - last_time);
-
-//            schunk_lwa4p.read();
-            cm.update(current_time, elapsed_time);
-//            schunk_lwa4p.write();
-
+            ros::Duration elapsed_time = current_time - last_time;
             last_time = current_time;
-            ros::spinOnce();
+
+            schunk_lwa4p.read();
+            cm.update(current_time, elapsed_time);
+            schunk_lwa4p.write();
         }
     }
     catch(...)
