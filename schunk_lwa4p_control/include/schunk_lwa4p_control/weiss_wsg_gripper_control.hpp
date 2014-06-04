@@ -50,8 +50,8 @@ class WeissWsgGripperControl
 {
 public:
     struct Parameters {
-        std::string joint_name_left;
-        std::string joint_name_right;
+        std::string joint_name_left_;
+        std::string joint_name_right_;
         int can_id_;
         double default_velocity_;
         double default_effort_;
@@ -64,14 +64,22 @@ public:
     void write();
 
 private:
+    struct JointInfo
+    {
+        JointInfo();
+
+        double current_position_;
+        double current_velocity_;
+        double current_effort_;
+        double commanded_position_;
+    };
+
+    void registerJoint(hardware_interface::RobotHW & robot_hw, const std::string & name, JointInfo & joint_info);
+
     Parameters parameters_;
-
+    JointInfo left_joint_;
+    JointInfo right_joint_;
     boost::shared_ptr<weiss_wsg_gripper::Gripper> gripper_;
-
-    double current_position_;
-    double current_velocity_;
-    double current_effort_;
-    double commanded_position_;
 };
 
 }
