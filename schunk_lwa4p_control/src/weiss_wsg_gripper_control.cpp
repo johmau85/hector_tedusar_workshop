@@ -22,10 +22,15 @@ void WeissWsgGripperControl::initialize(hardware_interface::RobotHW & robot_hw, 
     if (joint_state_interface == NULL || joint_position_interface == NULL)
         throw std::runtime_error("robot_hw must contain a JointStateInterface and a PositionJointInterface, but doesn't");
 
-    joint_state_interface->registerHandle(hardware_interface::JointStateHandle(parameters.joint_name_, &current_position_,
+    joint_state_interface->registerHandle(hardware_interface::JointStateHandle(parameters.joint_name_left, &current_position_,
                                                                                &current_velocity_, &current_effort_));
-    joint_position_interface->registerHandle(hardware_interface::JointHandle(joint_state_interface->getHandle(parameters.joint_name_),
+    joint_position_interface->registerHandle(hardware_interface::JointHandle(joint_state_interface->getHandle(parameters.joint_name_left),
                                                                              &commanded_position_));
+    joint_state_interface->registerHandle(hardware_interface::JointStateHandle(parameters.joint_name_right, &current_position_,
+                                                                               &current_velocity_, &current_effort_));
+    joint_position_interface->registerHandle(hardware_interface::JointHandle(joint_state_interface->getHandle(parameters.joint_name_right),
+                                                                             &commanded_position_));
+
 
     std::ostringstream ss;
     ss << "ipa_canopen:" << parameters.can_id_;

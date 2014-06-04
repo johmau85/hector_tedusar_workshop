@@ -50,7 +50,8 @@ class WeissWsgGripperControl
 {
 public:
     struct Parameters {
-        std::string joint_name_;
+        std::string joint_name_left;
+        std::string joint_name_right;
         int can_id_;
         double default_velocity_;
         double default_effort_;

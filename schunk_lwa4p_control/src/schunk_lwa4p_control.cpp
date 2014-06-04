@@ -147,6 +147,16 @@ SchunkLWA4P::SchunkLWA4P()
 
     registerInterface(&joint_state_interface_);
     registerInterface(&velocity_joint_interface_);
+    registerInterface(&position_joint_interface_);
+
+    WeissWsgGripperControl::Parameters gripper_param;
+    private_nh.param<int>("wsg_gripper/can_id", gripper_param.can_id_, 100);
+    private_nh.param<double>("wsg_gripper/default_effort", gripper_param.default_effort_, 10.0);
+    private_nh.param<double>("wsg_gripper/default_velocity", gripper_param.default_velocity_, 0.05);
+    private_nh.param<std::string>("wsg_gripper/joint_name_left", gripper_param.joint_name_left, std::string("gripper_base_joint_gripper_left"));
+    private_nh.param<std::string>("wsg_gripper/joint_name_right", gripper_param.joint_name_right, std::string("gripper_base_joint_gripper_right"));
+
+    weiss_wsg_gripper_.initialize(*this, gripper_param);
 }
 
 void SchunkLWA4P::read()
@@ -159,10 +169,14 @@ void SchunkLWA4P::read()
         joint_positions_[joint_name] = canopen::devices[id].getActualPos();
         joint_velocitys_[joint_name] = canopen::devices[id].getActualVel();
     }
+
+    weiss_wsg_gripper_.read();
 }
 
 void SchunkLWA4P::write()
 {
+    weiss_wsg_gripper_.write();
+
     std::vector<double> velocities;
 
     for( std::map<std::string, double>::iterator it = joint_vel_cmds_.begin(); it != joint_vel_cmds_.end(); ++it ) {
