@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package>
+  <name>weiss_wsg_gripper</name>
+  <version>0.0.0</version>
+  <description>Temporary weiss_wsg_gripper package</description>
+  <maintainer email="alexander.buchegger@student.tugraz.at">Alexander Buchegger</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <run_depend>roscpp</run_depend>
+
+  <export>
+  </export>
+</package>
+
