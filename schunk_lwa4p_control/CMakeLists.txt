@@ -4,6 +4,7 @@ project(schunk_lwa4p_control)
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
   ipa_canopen_core
+  weiss_wsg_gripper
   hardware_interface
   controller_manager
   roscpp
@@ -69,6 +70,8 @@ include_directories(
 add_executable(schunk_lwa4p_control_node
   include/schunk_lwa4p_control/schunk_lwa4p_control.hpp
   src/schunk_lwa4p_control.cpp
+  include/schunk_lwa4p_control/weiss_wsg_gripper_control.hpp
+  src/weiss_wsg_gripper_control.cpp
 )
 
 ## Add cmake target dependencies of the executable/library
