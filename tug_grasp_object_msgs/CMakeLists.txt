@@ -6,6 +6,7 @@ project(tug_grasp_object_msgs)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
     actionlib
+  actionlib_msgs
   geometry_msgs
   message_generation
 )
@@ -66,10 +67,11 @@ find_package(catkin REQUIRED COMPONENTS
  )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs
-# )
+ generate_messages(
+   DEPENDENCIES
+  geometry_msgs
+  actionlib_msgs
+ )
 
 ###################################
 ## catkin specific configuration ##
@@ -83,7 +85,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES tug_grasp_object_msgs
-  CATKIN_DEPENDS geometry_msgs message_generation
+  #CATKIN_DEPENDS geometry_msgs message_generation
 #  DEPENDS system_lib
 )
 
