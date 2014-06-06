@@ -139,6 +139,7 @@ public:
   Gripper(const std::string & transport_uri);
   ~Gripper();
 
+  void setDebugOutputEnabled(bool debug_output_enabled);
   boost::signals::connection registerAsyncPacketCallback(
       AsyncPacketCallback callback);
 
@@ -204,6 +205,7 @@ private:
   boost::shared_ptr<GripperPacketReceiver> packet_receiver_;
   boost::signal<AsyncPacketCallbackSignature> async_packet_signal_;
   bool connected_;
+  bool debug_output_enabled_;
 };
 
 }
