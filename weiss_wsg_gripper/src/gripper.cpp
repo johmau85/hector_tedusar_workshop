@@ -56,7 +56,7 @@ static const std::string grasping_state_names[] = {
     };
 
 Gripper::Gripper(const std::string & transport_uri)
-    : async_packet_signal_(), connected_(false)
+    : async_packet_signal_(), connected_(false), debug_output_enabled_(false)
 {
   transport_ = Transport::createFromUri(transport_uri);
   packet_receiver_ = boost::make_shared<GripperPacketReceiver>();
@@ -65,6 +65,11 @@ Gripper::Gripper(const std::string & transport_uri)
 Gripper::~Gripper()
 {
   disconnect();
+}
+
+void Gripper::setDebugOutputEnabled(bool debug_output_enabled)
+{
+  debug_output_enabled_ = debug_output_enabled;
 }
 
 boost::signals::connection Gripper::registerAsyncPacketCallback(
@@ -122,6 +127,14 @@ void Gripper::checkForAsyncPackets()
     transport_->receive(buffer, false);
     if (buffer.empty())
       break;
+
+    if (debug_output_enabled_)
+    {
+      std::ostringstream ss;
+      for (size_t i = 0; i < buffer.size(); ++i)
+        ss << " 0x" << std::hex << (unsigned int) buffer.at(i);
+      ROS_INFO("Gripper: received packet: [%s]", ss.str().c_str());
+    }
 
     for (size_t i = 0; i < buffer.size(); ++i)
     {
@@ -477,10 +490,13 @@ void Gripper::transmitPacket(Command command,
   raw_packet.push_back(cs);
   raw_packet.push_back(cs >> 8);
 
-  //std::ostringstream ss;
-  //for (size_t i = 0; i < raw_packet.size(); ++i)
-  //	ss << " 0x" << std::hex << (unsigned int) raw_packet.at(i);
-  //ROS_INFO("Gripper::transmitPacket: raw_packet = [%s]", ss.str().c_str());
+  if (debug_output_enabled_)
+  {
+    std::ostringstream ss;
+    for (size_t i = 0; i < raw_packet.size(); ++i)
+      ss << " 0x" << std::hex << (unsigned int) raw_packet.at(i);
+    ROS_INFO("Gripper: transmitting packet: [%s]", ss.str().c_str());
+  }
 
   transport_->transmit(raw_packet);
   transport_->flush();
@@ -494,7 +510,19 @@ void Gripper::receivePacket(const Command command, ErrorCode &error_code,
 
   while (!received)
   {
+    if (debug_output_enabled_)
+      ROS_INFO("Gripper: waiting for packet with command %s", getCommandName(command).c_str());
+
     transport_->receive(buffer, true);
+
+    if (debug_output_enabled_)
+    {
+      std::ostringstream ss;
+      for (size_t i = 0; i < buffer.size(); ++i)
+        ss << " 0x" << std::hex << (unsigned int) buffer.at(i);
+      ROS_INFO("Gripper: received packet: [%s]", ss.str().c_str());
+    }
+
     for (size_t i = 0; i < buffer.size(); ++i)
     {
       if (packet_receiver_->feed(buffer.at(i)))
