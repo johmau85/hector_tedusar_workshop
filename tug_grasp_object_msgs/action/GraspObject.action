@@ -1,0 +1,8 @@
+# Define the goal
+tug_grasp_object_msgs/GraspObject object_to_grasp
+---
+# Define the result
+uint8 result
+---
+# Define a feedback message
+uint8 feedback
