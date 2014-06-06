@@ -1,2 +1,2 @@
-- git: {local-name: src/external/hector_handle_detector_tools, uri: 'https://github.com/atenpas/handle_detector.git', version: master}
+- git: {local-name: src/external/handle_detector, uri: 'https://github.com/atenpas/handle_detector.git', version: master}
 - git: {local-name: src/hector_handle_detector_tools, uri: 'https://github.com/tu-darmstadt-ros-pkg/hector_handle_detector_tools.git', version: master}
