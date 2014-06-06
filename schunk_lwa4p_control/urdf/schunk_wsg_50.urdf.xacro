@@ -84,7 +84,7 @@
 	     <!--box size="0.0175 0.03 0.024"/-->
           </geometry>
           <material name="black">
-		<color rgba="0 0 0 0"/>
+		<color rgba="0 0 0 1"/>
       	  </material>
       </visual>
 
@@ -130,7 +130,7 @@
              <mesh filename="package://schunk_lwa4p_control/meshes/WSG-FMF.stl" scale="0.001 0.001 0.001"/>
           </geometry>
           <material name="black">
-		<color rgba="0 0 0 0"/>
+		<color rgba="0 0 0 1"/>
       	  </material>
       </visual>
 
@@ -159,6 +159,7 @@
      <axis xyz="-1 0 0"/>
      <dynamics friction="100" damping="100" />
      <limit effort="100" velocity="100"/>
+     <mimic joint="${name}_base_joint_gripper_left" multiplier="-1" offset ="0" />
   </joint>
 
   <transmission name="${name}_base_trans_right" type="pr2_mechanism_model/SimpleTransmission">
@@ -180,11 +181,11 @@
       <visual>
           <origin xyz="0.0 0 0" rpy="0 0 0" />
           <geometry>
+             <!--box size="0.0175 0.03 0.024"/-->
              <mesh filename="package://schunk_lwa4p_control/meshes/GUIDE_WSG50_110.stl" scale="0.001 0.001 0.001"/>
-	     <!--box size="0.0175 0.03 0.024"/-->
           </geometry>
           <material name="black">
-		<color rgba="0 0 0 0"/>
+		<color rgba="0 0 0 1"/>
       	  </material>
       </visual>
 
@@ -229,7 +230,7 @@
              <mesh filename="package://schunk_lwa4p_control/meshes/WSG-FMF.stl" scale="0.001 0.001 0.001"/>
           </geometry>
           <material name="black">
-		<color rgba="0 0 0 0"/>
+		<color rgba="0 0 0 1"/>
       	  </material>
       </visual>
 
