@@ -82,10 +82,10 @@ public:
    *
    * @param buffer  the output buffer. On exit, contains the received data, and its size represents the amount of
    *                received data.
-   * @param blocking  specifies whether the method should block until at least one byte of data is available, or
-   *                  should return immediately with an empty buffer if no data is available.
+   * @param timeout  specifies the maximum time (in seconds) after which the method will return when there is no data
+   *                 available.
    */
-  virtual void receive(std::vector<unsigned char> & buffer, bool blocking) = 0;
+  virtual void receive(std::vector<unsigned char> & buffer, float timeout) = 0;
 
   /**
    * Constructs a transport from a URI-style specification.

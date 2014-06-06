@@ -40,6 +40,7 @@
 #define weiss_wsg_gripper_control_hpp___
 
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
 #include <hardware_interface/robot_hw.h>
 #include <weiss_wsg_gripper/gripper.h>
 
@@ -60,6 +61,8 @@ public:
     WeissWsgGripperControl();
 
     void initialize(hardware_interface::RobotHW & robot_hw, const Parameters & parameters);
+    void cleanup();
+
     void read();
     void write();
 
@@ -75,11 +78,18 @@ private:
     };
 
     void registerJoint(hardware_interface::RobotHW & robot_hw, const std::string & name, JointInfo & joint_info);
+    void handleAsyncPacket(const weiss_wsg_gripper::Gripper::AsyncPacketInfo & packet);
 
     Parameters parameters_;
     JointInfo left_joint_;
     JointInfo right_joint_;
+    double last_commanded_position_;
     boost::shared_ptr<weiss_wsg_gripper::Gripper> gripper_;
+
+    boost::mutex current_data_lock_;
+    double current_position_;
+    double current_velocity_;
+    double current_effort_;
 };
 
 }

@@ -53,8 +53,9 @@ class SchunkLWA4P : public hardware_interface::RobotHW
 public:
     SchunkLWA4P();
 
-    void read();
+    void cleanup();
 
+    void read();
     void write();
 
 private:

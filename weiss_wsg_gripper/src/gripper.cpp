@@ -8,6 +8,7 @@
 #include <string>
 #include <boost/assert.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <ros/ros.h>
 #include <weiss_wsg_gripper/gripper.h>
 #include <weiss_wsg_gripper/gripper_exceptions.h>
@@ -55,11 +56,14 @@ static const std::string grasping_state_names[] = {
 #undef X
     };
 
-Gripper::Gripper(const std::string & transport_uri)
-    : async_packet_signal_(), connected_(false), debug_output_enabled_(false)
+Gripper::Gripper(const std::string & transport_uri, bool debug_output_enabled, float io_timeout)
+    : async_packet_signal_(), connected_(false), debug_output_enabled_(debug_output_enabled), io_timeout_(io_timeout)
 {
+  //ROS_INFO("%s: start of constructor; creating transport", __func__);
   transport_ = Transport::createFromUri(transport_uri);
+  //ROS_INFO("%s: created transport, creating packet receiver", __func__);
   packet_receiver_ = boost::make_shared<GripperPacketReceiver>();
+  //ROS_INFO("%s: end of constructor", __func__);
 }
 
 Gripper::~Gripper()
@@ -84,24 +88,28 @@ void Gripper::connect()
   if (connected_)
     throw GripperIllegalStateException(
         "tried to connect gripper that's already connected");
+
+  if (debug_output_enabled_)
+      ROS_INFO("Gripper: connecting transport...");
   transport_->connect();
 
-  // test connection by sending loop packet:
-  ROS_INFO("test connection by sending loop packet");
-  /*	GripperPacketPayload payload;
-   payload.writeUint32(0xDEAD);
-   payload.writeUint32(0xBEEF);
-   transceivePacket(CMD_LOOP, 0, payload, &payload);
-   ROS_INFO("check packet");
+//  if (debug_output_enabled_)
+//    ROS_INFO("Testing connection by sending loop packet...");
+//  GripperPacketPayload payload;
+//  payload.writeUint32(0xDEAD);
+//  payload.writeUint32(0xBEEF);
+//  transceivePacket(CMD_LOOP, 0, payload, &payload);
+//  ROS_INFO("Checking packet");
 
-   if (payload.readUint32() == 0xDEAD && payload.readUint32() == 0xBEEF) {
-   connected_ = true;
-   } else {
-   transport_->disconnect();
-   throw GripperInternalErrorException(
-   "Gripper::connect failed: loop command returned something different from what was sent");
-   }
-   */
+//  if (!(payload.readUint32() == 0xDEAD && payload.readUint32() == 0xBEEF)) {
+//    transport_->disconnect();
+//    throw GripperInternalErrorException(
+//        "Gripper::connect failed: loop command returned something different from what was sent");
+//  }
+
+  if (debug_output_enabled_)
+      ROS_INFO("Gripper: connected.");
+  connected_ = true;
 }
 
 void Gripper::disconnect()
@@ -124,7 +132,8 @@ void Gripper::checkForAsyncPackets()
 
   while (true)
   {
-    transport_->receive(buffer, false);
+    buffer.clear();
+    transport_->receive(buffer, 0);
     if (buffer.empty())
       break;
 
@@ -160,6 +169,17 @@ void Gripper::prepositionFingers(BlockingBehaviour bb, MovementType mt,
   payload.writeFloat(speed);
   transceivePacket(CMD_PREPOSITION_FINGERS, 0, payload, 0);
 }
+
+void Gripper::transmitPrepositionFingersCommand(BlockingBehaviour bb, MovementType mt, float width,
+                                   float speed)
+{
+    GripperPacketPayload payload;
+    payload.writeUint8(bb << 1 | mt);
+    payload.writeFloat(width);
+    payload.writeFloat(speed);
+    transmitPacket(CMD_PREPOSITION_FINGERS, payload);
+}
+
 
 void Gripper::stop()
 {
@@ -507,13 +527,16 @@ void Gripper::receivePacket(const Command command, ErrorCode &error_code,
 {
   std::vector<unsigned char> buffer;
   bool received = false;
+  boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
+  boost::posix_time::time_duration timeout = boost::posix_time::microseconds(io_timeout_ / 1e-6);
 
-  while (!received)
+  while (!received && (boost::posix_time::microsec_clock::local_time() - start_time) < timeout)
   {
     if (debug_output_enabled_)
       ROS_INFO("Gripper: waiting for packet with command %s", getCommandName(command).c_str());
 
-    transport_->receive(buffer, true);
+    buffer.clear();
+    transport_->receive(buffer, io_timeout_);
 
     if (debug_output_enabled_)
     {
@@ -540,6 +563,9 @@ void Gripper::receivePacket(const Command command, ErrorCode &error_code,
       }
     }
   }
+
+  if (!received)
+      throw GripperTimeoutException(std::string(__func__) + " timed out");
 }
 
 void Gripper::dispatchAsyncPacket()

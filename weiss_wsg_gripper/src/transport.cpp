@@ -27,10 +27,9 @@ TransportPtr Transport::createFromUri(const std::string & uri)
   std::vector<std::string> parts;
   boost::split(parts, uri, boost::is_any_of(":"));
 
-  if (parts.size() == 2 && parts[0] == "ipa_canopen" && !parts[2].empty())
+  if (parts.size() == 2 && parts.at(0) == "ipa_canopen" && !parts.at(1).empty())
   {
-    int can_id = atoi(parts[1].c_str());
-
+    int can_id = atoi(parts.at(1).c_str());
     transport = boost::make_shared<IpaCanopenTransport>(can_id);
   }
   else

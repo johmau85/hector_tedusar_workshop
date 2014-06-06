@@ -26,7 +26,12 @@ private:
 
 class GripperTransportException: public GripperException {
 public:
-	GripperTransportException(const std::string &message);
+    GripperTransportException(const std::string &message);
+};
+
+class GripperTimeoutException: public GripperException {
+public:
+    GripperTimeoutException(const std::string &message);
 };
 
 class GripperInternalErrorException: public GripperException {
