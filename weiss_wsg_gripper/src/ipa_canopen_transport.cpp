@@ -3,6 +3,7 @@
 #include <ipa_canopen_core/canopen.h>
 #include <weiss_wsg_gripper/gripper_exceptions.h>
 #include <boost/bind.hpp>
+#include <boost/date_time/posix_time/posix_time_duration.hpp>
 
 // Using a static function here so we don't have to include canopen.h in header file:
 static void handleIncomingCanMessage(weiss_wsg_gripper::IpaCanopenTransport * transport, const TPCANRdMsg m) {
@@ -22,15 +23,15 @@ IpaCanopenTransport::~IpaCanopenTransport()
 
 void IpaCanopenTransport::connect()
 {
-    if (!canopen::h)
+    if (!canopen::isCANConnected())
         throw GripperTransportException("ipa_canopen_core has not yet opened CAN interface; must be done before connecting to gripper");
 
-    canopen::incomingPDOHandlers[can_id_ + 1] = boost::bind(handleIncomingCanMessage, this, _1);
+    canopen::incomingCANMessageHandlers[can_id_ + 1] = boost::bind(handleIncomingCanMessage, this, _1);
 }
 
 void IpaCanopenTransport::disconnect()
 {
-    canopen::incomingPDOHandlers.erase(can_id_ + 1);
+    canopen::incomingCANMessageHandlers.erase(can_id_ + 1);
 }
 
 void IpaCanopenTransport::transmit(const std::vector<unsigned char> & buffer)
@@ -48,12 +49,13 @@ void IpaCanopenTransport::flush()
     // Ignored.
 }
 
-void IpaCanopenTransport::receive(std::vector<unsigned char> & buffer, bool blocking)
+void IpaCanopenTransport::receive(std::vector<unsigned char> & buffer, float timeout)
 {
     boost::unique_lock<boost::mutex> lock(receive_buffer_lock_);
-    while (receive_buffer_.empty() && blocking)
-        receive_buffer_nonempty_.wait(lock);
+    if (receive_buffer_.empty() && timeout > 0)
+        receive_buffer_nonempty_.timed_wait(lock, boost::posix_time::microseconds(timeout / 1e-6));
     buffer.assign(receive_buffer_.begin(), receive_buffer_.end());
+    receive_buffer_.clear();
 }
 
 void IpaCanopenTransport::handleReceivedCanMessage(const unsigned char * data, size_t size)
@@ -75,7 +77,7 @@ void IpaCanopenTransport::transmitCanMessage(const unsigned char * data, size_t 
     can_message.LEN = size;
     for (size_t i = 0; i < size; ++i)
         can_message.DATA[i] = data[i];
-    CAN_Write(canopen::h, &can_message);
+    canopen::sendCANMessage(can_message);
 }
 
 

@@ -16,7 +16,7 @@ public:
     virtual void disconnect();
     virtual void transmit(const std::vector<unsigned char> & buffer);
     virtual void flush();
-    virtual void receive(std::vector<unsigned char> & buffer, bool blocking);
+    virtual void receive(std::vector<unsigned char> & buffer, float timeout);
 
     void handleReceivedCanMessage(const unsigned char * data, size_t size);
 

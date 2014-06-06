@@ -24,6 +24,11 @@ GripperTransportException::GripperTransportException(const std::string& message)
 		GripperException(message) {
 }
 
+GripperTimeoutException::GripperTimeoutException(const std::string &message) : GripperException(message)
+{
+}
+
+
 GripperInternalErrorException::GripperInternalErrorException(
 		const std::string& message) :
 		GripperException(message) {

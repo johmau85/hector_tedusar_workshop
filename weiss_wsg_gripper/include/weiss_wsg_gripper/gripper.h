@@ -136,7 +136,7 @@ public:
    *     tcpip:192.168.5.10:1000.
    * @throw std::invalid_argument if an invalid URI is passed.
    */
-  Gripper(const std::string & transport_uri);
+  Gripper(const std::string & transport_uri, bool debug_output_enabled, float io_timeout);
   ~Gripper();
 
   void setDebugOutputEnabled(bool debug_output_enabled);
@@ -150,8 +150,13 @@ public:
   void checkForAsyncPackets();
 
   void executeHomingSequence(HomingDirection direction);
+
   void prepositionFingers(BlockingBehaviour bb, MovementType mt, float width,
       float speed);
+  // Quickfix for schunk_lpa4w_control: executes Preposition Fingers command without waiting for result.
+  void transmitPrepositionFingersCommand(BlockingBehaviour bb, MovementType mt, float width,
+      float speed);
+
   void stop();
   void issueFastStop();
   void acknowledgeFastStop();
@@ -206,6 +211,7 @@ private:
   boost::signal<AsyncPacketCallbackSignature> async_packet_signal_;
   bool connected_;
   bool debug_output_enabled_;
+  float io_timeout_;
 };
 
 }

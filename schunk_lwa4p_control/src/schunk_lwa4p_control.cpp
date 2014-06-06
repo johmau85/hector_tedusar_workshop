@@ -159,6 +159,11 @@ SchunkLWA4P::SchunkLWA4P()
     weiss_wsg_gripper_.initialize(*this, gripper_param);
 }
 
+void SchunkLWA4P::cleanup()
+{
+    weiss_wsg_gripper_.cleanup();
+}
+
 void SchunkLWA4P::read()
 {
     canopen::DeviceGroup dg = canopen::deviceGroups[chain_name_];
@@ -170,7 +175,9 @@ void SchunkLWA4P::read()
         joint_velocitys_[joint_name] = canopen::devices[id].getActualVel();
     }
 
+    //ROS_INFO("%s: before weiss_wsg_gripper_.read", __func__);
     weiss_wsg_gripper_.read();
+    //ROS_INFO("%s: after weiss_wsg_gripper_.read", __func__);
 }
 
 void SchunkLWA4P::write()
@@ -209,16 +216,27 @@ int main(int argc, char** argv)
 
         while (ros::ok())
         {
+            //ROS_INFO("in main loop");
             loop_rate.sleep();
 
             ros::Time current_time = ros::Time::now();
             ros::Duration elapsed_time = current_time - last_time;
             last_time = current_time;
 
+            //ROS_INFO("before read");
             schunk_lwa4p.read();
+            //ROS_INFO("after read");
+
+            //ROS_INFO("before cm.update");
             cm.update(current_time, elapsed_time);
+            //ROS_INFO("after cm.update");
+
+            //ROS_INFO("before write");
             schunk_lwa4p.write();
+            //ROS_INFO("after write");
         }
+
+        schunk_lwa4p.cleanup();
     }
     catch(...)
     {
