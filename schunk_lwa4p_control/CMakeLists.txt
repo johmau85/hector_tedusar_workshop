@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   hardware_interface
   controller_manager
   roscpp
+  urdf
 )
 
 ## System dependencies are found with CMake's conventions

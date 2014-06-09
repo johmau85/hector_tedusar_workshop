@@ -17,12 +17,14 @@
   <build_depend>hardware_interface</build_depend>
   <build_depend>controller_manager</build_depend>
   <build_depend>roscpp</build_depend>
+  <build_depend>urdf</build_depend>
 
   <run_depend>ipa_canopen_core</run_depend>
   <run_depend>weiss_wsg_gripper</run_depend>
   <run_depend>hardware_interface</run_depend>
   <run_depend>controller_manager</run_depend>
   <run_depend>roscpp</run_depend>
+  <run_depend>urdf</run_depend>
 
 
   <export>

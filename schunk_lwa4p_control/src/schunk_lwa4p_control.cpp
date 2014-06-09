@@ -40,6 +40,10 @@
 #include <ipa_canopen_core/canopen.h>
 #include <controller_manager/controller_manager.h>
 #include <stdexcept>
+#include <joint_limits_interface/joint_limits.h>
+#include <joint_limits_interface/joint_limits_urdf.h>
+#include <joint_limits_interface/joint_limits_rosparam.h>
+#include <urdf/model.h>
 
 namespace schunk_lwa4p_control
 {
@@ -60,6 +64,21 @@ SchunkLWA4P::SchunkLWA4P()
     canopen::baudRate = baudrate;
 
     private_nh.param<std::string>("chain_name", chain_name_, std::string("arm_controller"));
+
+    std::string robot_description;
+
+    if(!nh_.searchParam("robot_description", robot_description))
+    {
+        ROS_ERROR("Failed to get robot_description parameter");
+        throw std::invalid_argument("robot_description");
+    }
+
+    urdf::Model urdf_model;
+    if(!urdf_model.initParam(robot_description))
+    {
+        ROS_ERROR("Failed to initialize urdf from robot_description parameter");
+        throw std::invalid_argument(robot_description);
+    }
 
     std::vector<std::string> joint_names;
 
@@ -121,6 +140,13 @@ SchunkLWA4P::SchunkLWA4P()
         canopen::incomingEMCYHandlers[ 0x081 + it.first ] = [it](const TPCANRdMsg mE) { canopen::defaultEMCY_incoming( it.first, mE ); };
     }
 
+//    for(std::map<uint8_t, canopen::Device>::iterator it = canopen::devices.begin(); it != canopen::devices.end(); ++it)
+//    {
+//        canopen::incomingPDOHandlers[ 0x180 + it->first ] = boost::bind(&canopen::defaultPDO_incoming_status, it->first, _1);
+//        canopen::incomingPDOHandlers[ 0x480 + it->first ] = boost::bind(&canopen::defaultPDO_incoming_pos, it->first, _1);
+//        canopen::incomingEMCYHandlers[ 0x081 + it->first ] = boost::bind(&canopen::defaultEMCY_incoming, it->first, _1);
+//    }
+
     bool init_success = canopen::init(device, chain_name_, canopen::syncInterval);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
@@ -143,6 +169,29 @@ SchunkLWA4P::SchunkLWA4P()
 
         hardware_interface::JointHandle vel_handle(joint_state_interface_.getHandle(joint_names[i]), &joint_vel_cmds_[joint_names[i]]);
         velocity_joint_interface_.registerHandle(vel_handle);
+
+        joint_limits_interface::JointLimits limits;
+        joint_limits_interface::SoftJointLimits soft_limits;
+
+        boost::shared_ptr<const urdf::Joint> urdf_joint = urdf_model.getJoint(joint_names[i]);
+        if(!joint_limits_interface::getJointLimits(urdf_joint, limits))
+        {
+            ROS_WARN_STREAM("No urdf limits defined for joint: " << joint_names[i]);
+        }
+
+        if(!joint_limits_interface::getSoftJointLimits(urdf_joint, soft_limits))
+        {
+            ROS_WARN_STREAM("No urdf soft-limits defined for joint: " << joint_names[i]);
+        }
+
+        if(!joint_limits_interface::getJointLimits(joint_names[i], nh_, limits))
+        {
+            ROS_WARN_STREAM("No param limits defined for joint: " << joint_names[i]);
+        }
+
+        joint_limits_interface::VelocityJointSoftLimitsHandle vel_joint_lim_handle(vel_handle, limits, soft_limits);
+
+        velocity_joint_limit_interface_.registerHandle(vel_joint_lim_handle);
     }
 
     registerInterface(&joint_state_interface_);
@@ -164,15 +213,15 @@ void SchunkLWA4P::cleanup()
     weiss_wsg_gripper_.cleanup();
 }
 
-void SchunkLWA4P::read()
+void SchunkLWA4P::read(ros::Time time, ros::Duration period)
 {
     canopen::DeviceGroup dg = canopen::deviceGroups[chain_name_];
 
-    for (auto id : dg.getCANids())
+    for (std::vector<uint8_t>::iterator it = dg.getCANids().begin(); it != dg.getCANids().end(); ++it)
     {
-        std::string joint_name = canopen::devices[id].getName();
-        joint_positions_[joint_name] = canopen::devices[id].getActualPos();
-        joint_velocitys_[joint_name] = canopen::devices[id].getActualVel();
+        std::string joint_name = canopen::devices[*it].getName();
+        joint_positions_[joint_name] = canopen::devices[*it].getActualPos();
+        joint_velocitys_[joint_name] = canopen::devices[*it].getActualVel();
     }
 
     //ROS_INFO("%s: before weiss_wsg_gripper_.read", __func__);
@@ -180,9 +229,11 @@ void SchunkLWA4P::read()
     //ROS_INFO("%s: after weiss_wsg_gripper_.read", __func__);
 }
 
-void SchunkLWA4P::write()
+void SchunkLWA4P::write(ros::Time time, ros::Duration period)
 {
     weiss_wsg_gripper_.write();
+
+    velocity_joint_limit_interface_.enforceLimits(period);
 
     std::vector<double> velocities;
 
@@ -224,7 +275,7 @@ int main(int argc, char** argv)
             last_time = current_time;
 
             //ROS_INFO("before read");
-            schunk_lwa4p.read();
+            schunk_lwa4p.read(current_time, elapsed_time);
             //ROS_INFO("after read");
 
             //ROS_INFO("before cm.update");
@@ -232,7 +283,7 @@ int main(int argc, char** argv)
             //ROS_INFO("after cm.update");
 
             //ROS_INFO("before write");
-            schunk_lwa4p.write();
+            schunk_lwa4p.write(current_time, elapsed_time);
             //ROS_INFO("after write");
         }
 

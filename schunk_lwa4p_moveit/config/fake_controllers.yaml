@@ -1,0 +1,12 @@
+controller_list:
+  - name: fake_lwa4p_arm_controller
+    joints:
+      - arm_1_joint
+      - arm_2_joint
+      - arm_3_joint
+      - arm_4_joint
+      - arm_5_joint
+      - arm_6_joint
+  - name: fake_wsg50_gripper_controller
+    joints:
+      - gripper_base_joint_gripper_left
