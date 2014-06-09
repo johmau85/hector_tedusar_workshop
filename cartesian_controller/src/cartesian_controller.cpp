@@ -104,12 +104,6 @@ bool CartesianController::init(hardware_interface::VelocityJointInterface* hw, r
 
 void CartesianController::update(const ros::Time& time, const ros::Duration& period)
 {
-    //    double dt;                    // Servo loop time step
-
-    //    // Calculate the dt between servo cycles.
-    //    dt = (robot_state_->getTime() - last_time_).toSec();
-    //    last_time_ = robot_state_->getTime();
-
     // get joint positions
     for(size_t i=0; i<joint_handles_.size(); i++)
     {
@@ -120,15 +114,6 @@ void CartesianController::update(const ros::Time& time, const ros::Duration& per
     // Compute the forward kinematics and Jacobian (at this location).
     joint_to_pose_solver_->JntToCart(jnt_posvel_.q, x_);
     joint_to_jacobian_solver_->JntToJac(jnt_posvel_.q, J_);
-
-    for (unsigned int i = 0 ; i < 6 ; i++)
-    {
-        xdot_(i) = 0;
-        for (unsigned int j = 0 ; j < kdl_chain_.getNrOfJoints() ; j++)
-        {
-            xdot_(i) += J_(i,j) *  jnt_posvel_.qdot(j);
-        }
-    }
 
     // Convert the wrench into joint efforts
     for (unsigned int i = 0; i < kdl_chain_.getNrOfJoints(); i++)
