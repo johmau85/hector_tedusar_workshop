@@ -1,0 +1,1 @@
+- git: {local-name: src/hector_tedusar_schunk_moveit, uri: 'https://github.com/johmau85/hector_tedusar_workshop.git', version: schunk_moveit}
