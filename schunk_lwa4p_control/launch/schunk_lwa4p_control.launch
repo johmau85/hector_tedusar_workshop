@@ -18,9 +18,9 @@
         <!-- Load joint controller configurations from YAML file to parameter server -->
         <rosparam file="$(find schunk_lwa4p_control)/config/hardware_controllers.yaml" command="load"/>
         
-        <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="joint_state_controller velocity_trajectory_controller gripper_controller" />
-                                                                                                                          
+        <!--node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="joint_state_controller velocity_trajectory_controller gripper_controller" /-->
+                                                                                                                     
     <rosparam file="$(find schunk_lwa4p_control)/config/cartesian_controller.yaml" command="load"/>
-    <node name="cartesian_controller_spawner" pkg="controller_manager" type="spawner" args="cartesian_controller" />
+    <node name="cartesian_controller_spawner" pkg="controller_manager" type="spawner" output="screen"  args="cartesian_controller" />
 
 </launch> 
