@@ -71,15 +71,20 @@ static HANDLE canHandle;
 
 // Reads in a loop with timeout to enable writing between reads.
 static int readCANMessage(TPCANRdMsg & message) {
-    int return_code;
-    //std::cout << "Reading incoming data" << std::endl;
-    do
-    {
-        boost::lock_guard<boost::mutex> lock(canHandleLock);
-        return_code = LINUX_CAN_Read_Timeout(canHandle, &message, READ_TIMEOUT);
-    }
-    while (return_code == CAN_ERR_QRCVEMPTY);
-    return return_code;
+//    int return_code;
+//    //std::cout << "Reading incoming data" << std::endl;
+//    while (true)
+//    {
+//        {
+//            boost::lock_guard<boost::mutex> lock(canHandleLock);
+//            return_code = LINUX_CAN_Read_Timeout(canHandle, &message, 0);
+//        }
+//        if (return_code != CAN_ERR_QRCVEMPTY)
+//            break;
+//        std::this_thread::sleep_for(std::chrono::microseconds(READ_TIMEOUT));
+//    }
+//    return return_code;
+    return LINUX_CAN_Read(canHandle, &message);
 }
 
 namespace canopen
