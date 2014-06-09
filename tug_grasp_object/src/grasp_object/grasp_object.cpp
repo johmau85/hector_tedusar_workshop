@@ -15,7 +15,9 @@ GraspObject::GraspObject(std::string name, geometry_msgs::PoseStamped pose, std:
 
     std::string planning_group_name = arm_+"_arm";
     move_group_.reset(new move_group_interface::MoveGroup(planning_group_name));
-    move_group_->setPlanningTime(30.0);
+    move_group_->setPlanningTime(180.0);
+
+
 
     // Load the Robot Viz Tools for publishing to rviz
     visual_tools_.reset(new moveit_visual_tools::VisualTools( data_.base_link_));

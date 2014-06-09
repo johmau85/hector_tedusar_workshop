@@ -73,9 +73,11 @@ int main(int argc, char **argv)
     handle_pose.orientation.x = 0.663621432006;
     handle_pose.orientation.y = 0.326102320682 ;
     handle_pose.orientation.z = 0.631631315633;
-    handle_pose.position.x = 1.01;
-    handle_pose.position.y = -0.34;
+    handle_pose.position.x = 0.99;
+    handle_pose.position.y = -0.36;
     handle_pose.position.z = 0.15;
+
+
 
     object.object_pose.pose = handle_pose;
     object.object_pose.header.frame_id = "/base";
