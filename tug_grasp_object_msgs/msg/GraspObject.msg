@@ -7,6 +7,9 @@ string object_type
 # pose of object (position represents midpoint of object)
 geometry_msgs/PoseStamped object_pose 
 
+# arm which should be taken for grasp ('left' or 'right')
+string arm
+
 # optional: good grasping direction of object (e.g. normal to wall etc.)
 geometry_msgs/Vector3 object_grasping_direction 
   

@@ -85,7 +85,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES tug_grasp_object_msgs
-  #CATKIN_DEPENDS geometry_msgs message_generation
+  CATKIN_DEPENDS geometry_msgs message_runtime actionlib_msgs
 #  DEPENDS system_lib
 )
 

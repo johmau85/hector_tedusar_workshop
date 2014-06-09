@@ -51,7 +51,8 @@
   <build_depend>roscpp</build_depend>
   <build_depend>moveit_simple_grasps</build_depend>
   <build_depend>tug_grasp_object_msgs</build_depend>
-  <build_depend>message_generation</build_depend>
+  <build_depend>eigen_conversions</build_depend>
+
   <run_depend>baxter_control</run_depend>
   <run_depend>baxter_core_msgs</run_depend>
   <run_depend>geometry_msgs</run_depend>
@@ -62,7 +63,7 @@
   <run_depend>roscpp</run_depend>
   <run_depend>moveit_simple_grasps</run_depend>
   <run_depend>tug_grasp_object_msgs</run_depend>
-  <run_depend>message_generation</run_depend>
+
 
 
   <!-- The export tag contains other, unspecified, tags -->

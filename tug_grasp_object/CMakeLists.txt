@@ -15,11 +15,12 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   moveit_simple_grasps
   tug_grasp_object_msgs
-  message_generation
+  eigen_conversions
 )
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(Eigen REQUIRED)
+find_package(Boost REQUIRED thread system)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -91,7 +92,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES tug_grasp_object
-  CATKIN_DEPENDS baxter_control baxter_core_msgs geometry_msgs moveit_core moveit_ros_planning moveit_ros_planning_interface moveit_visual_tools roscpp moveit_simple_grasps tug_grasp_object_msgs
+#  CATKIN_DEPENDS baxter_control baxter_core_msgs geometry_msgs moveit_core moveit_ros_planning moveit_ros_planning_interface moveit_visual_tools roscpp moveit_simple_grasps tug_grasp_object_msgs
 #  DEPENDS system_lib
 )
 
@@ -107,21 +108,35 @@ include_directories(
 )
 
 ## Declare a cpp library
-# add_library(tug_grasp_object
-#   src/${PROJECT_NAME}/tug_grasp_object.cpp
-# )
+ add_library(grasp_object
+      include/${PROJECT_NAME}/grasping_point/data/data.h
+      include/${PROJECT_NAME}/grasping_point/grasping_point_door_handle_calculation.h
+      include/${PROJECT_NAME}/grasping_point/grasping_point_object_calculation.h
+      include/${PROJECT_NAME}/grasp_object/grasp_object.h
+      include/${PROJECT_NAME}/grasp_object/grasp_door_handle.h
+      include/${PROJECT_NAME}/grasp_object_node.h
+      src/grasping_point/data/data.cpp
+      src/grasping_point/grasping_point_door_handle_calculation.cpp
+      src/grasp_object/grasp_door_handle.cpp
+      src/grasp_object/grasp_object.cpp
+ )
 
 ## Declare a cpp executable
-add_executable(grasp_object_node src/grasp_object_node.cpp)
+add_executable(grasp_object_node
+      src/grasp_object_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(tug_grasp_object_node tug_grasp_object_generate_messages_cpp)
+add_dependencies(grasp_object_node tug_grasp_object_msgs_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(tug_grasp_object_node
-#   ${catkin_LIBRARIES}
-# )
+
+target_link_libraries(grasp_object
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(grasp_object_node
+  grasp_object ${Boost_LIBRARIES}
+)
 
 #############
 ## Install ##

@@ -40,19 +40,86 @@
 // ROS
 #include <ros/ros.h>
 #include <grasp_handle/grasp/simple_grasp.h>
+#include <tug_grasp_object_msgs/GraspObjectAction.h>
 
+typedef boost::shared_ptr<actionlib::SimpleActionClient<tug_grasp_object_msgs::GraspObjectAction> > GraspObjectActionClientPtr;
 
 int main(int argc, char **argv)
 {
-  ros::init (argc, argv, "grasp_handle");
-  ros::AsyncSpinner spinner(1);
-  spinner.start();
+    ros::init (argc, argv, "grasp_handle");
+    ros::AsyncSpinner spinner(1);
+    spinner.start();
 
-  // Start the pick place node
-  simple_grasp::Grasp grasp_handle;
-  grasp_handle.startRoutine("door_handle");
+    // Start the pick place node
+    //  simple_grasp::Grasp grasp_handle;
+    //  grasp_handle.startRoutine("door_handle");
 
-  ros::shutdown();
+    GraspObjectActionClientPtr grasp_client;
 
-  return 0;
+    grasp_client.reset(new actionlib::SimpleActionClient<tug_grasp_object_msgs::GraspObjectAction>("grasp", false));
+
+    while(!grasp_client->waitForServer(ros::Duration(5.0))){
+         ROS_INFO("Waiting for the grasp action server to come up");
+      }
+
+    tug_grasp_object_msgs::GraspObjectGoal goal;
+    tug_grasp_object_msgs::GraspObject object;
+    object.object_name = "door_handle";
+    object.object_type = "door_handle";
+
+
+    geometry_msgs::Pose handle_pose;
+    handle_pose.orientation.w = -0.233035946881;
+    handle_pose.orientation.x = 0.663621432006;
+    handle_pose.orientation.y = 0.326102320682 ;
+    handle_pose.orientation.z = 0.631631315633;
+    handle_pose.position.x = 1.01;
+    handle_pose.position.y = -0.34;
+    handle_pose.position.z = 0.15;
+
+    object.object_pose.pose = handle_pose;
+    object.object_pose.header.frame_id = "/base";
+    object.object_pose.header.stamp = ros::Time::now();
+
+    goal.object_to_grasp = object;
+
+    grasp_client->sendGoal(goal);
+
+    while(true)
+    {
+        actionlib::SimpleClientGoalState grasp_state = grasp_client->getState();
+//        ROS_ERROR_STREAM("running in while" );
+        if(!((grasp_state == actionlib::SimpleClientGoalState::PENDING) || (grasp_state == actionlib::SimpleClientGoalState::ACTIVE)  || (grasp_state == actionlib::SimpleClientGoalState::SUCCEEDED)))
+        {
+            if((grasp_state == actionlib::SimpleClientGoalState::RECALLED) || (grasp_state == actionlib::SimpleClientGoalState::PREEMPTED))
+            {
+                ROS_ERROR_STREAM("The action was canceled during state: " );
+            }
+            else if(grasp_state == actionlib::SimpleClientGoalState::ABORTED)
+            {
+                ROS_ERROR_STREAM("The action reported an execution error during state: " );
+            }
+            else if(grasp_state == actionlib::SimpleClientGoalState::REJECTED)
+            {
+                ROS_ERROR_STREAM("The action was rejected in state: " );
+            }
+            else
+            {
+                ROS_ERROR_STREAM("Unhandled action state." );
+            }
+            break;
+
+        }
+
+        if(grasp_state == actionlib::SimpleClientGoalState::SUCCEEDED)
+        {
+            ROS_ERROR_STREAM("Action sucessfull complited" );
+            break;
+        }
+    }
+
+
+    ros::shutdown();
+
+    return 0;
 }

@@ -2,6 +2,11 @@
 tug_grasp_object_msgs/GraspObject object_to_grasp
 ---
 # Define the result
+uint8 ERROR_OCCURED=0
+uint8 EXECUTION_PREEMPTED=1
+uint8 GRASP_FAILED=2
+uint8 GRASP_SUCCESS=3
+
 uint8 result
 ---
 # Define a feedback message

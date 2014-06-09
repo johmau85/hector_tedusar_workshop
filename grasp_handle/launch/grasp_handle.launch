@@ -4,6 +4,10 @@
   <arg unless="$(arg debug)" name="launch_prefix" value="" />
   <arg     if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
 
+    <rosparam command="load" file="$(find grasp_handle)/config/baxter_grasp_data.yaml"/>    
+
+    <node name="tug_grasp_object_node" pkg="tug_grasp_object" type="grasp_object_node" />
+
   <!-- Launch grasp handle -->
   <node name="grasp_handle" launch-prefix="$(arg launch_prefix)" pkg="grasp_handle" 
 	type="grasp_handle_node" output="screen">
@@ -12,7 +16,6 @@
   </node>
 
  
-    <rosparam command="load" file="$(find moveit_simple_grasps)/config/baxter_grasp_data.yaml"/>    
 
 
 
