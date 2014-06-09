@@ -2,27 +2,32 @@
 <launch>
 
     <!-- send lwa4p urdf to param server -->
-        <param name="robot_description" command="$(find xacro)/xacro.py '$(find schunk_lwa4p_control)/urdf/lwa4p.urdf.xacro'" />
+    <param name="robot_description" command="$(find xacro)/xacro.py '$(find schunk_lwa4p_control)/urdf/lwa4p.urdf.xacro'" />
+    
+    <rosparam command="load" file="$(find schunk_lwa4p_moveit_config)/config/joint_limits.yaml"/>
         
     <!-- robot state publisher -->
-        <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher"/>
+    <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher"/>
         
-        <node name="schunk_lwa4p_control" pkg="schunk_lwa4p_control" type="schunk_lwa4p_control_node" output="screen">          
-            <!-- parameters for canopenmaster node -->
-            <rosparam command="load" ns="canopen" file="$(find schunk_lwa4p_control)/config/canopen.yaml" />
+    <node name="schunk_lwa4p_control" pkg="schunk_lwa4p_control" type="schunk_lwa4p_control_node" output="screen">          
+        <!-- parameters for canopenmaster node -->
+        <rosparam command="load" ns="canopen" file="$(find schunk_lwa4p_control)/config/canopen.yaml" />
 
-            <!-- parameter description of the CAN modules and for the corresponding trajectory controller -->
-            <rosparam command="load" ns="arm_controller" file="$(find schunk_lwa4p_control)/config/controller.yaml" />
-        </node>
+        <!-- parameter description of the CAN modules and for the corresponding trajectory controller -->
+        <rosparam command="load" ns="arm_controller" file="$(find schunk_lwa4p_control)/config/controller.yaml" />
+    </node>
             
-        <!-- Load joint controller configurations from YAML file to parameter server -->
-        <rosparam file="$(find schunk_lwa4p_control)/config/hardware_controllers.yaml" command="load"/>
-        
-        <!--node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="joint_state_controller velocity_trajectory_controller gripper_controller" /-->
-                                                                                                                     
-                                                                                                                          
-    <rosparam file="$(find schunk_lwa4p_control)/config/cartesian_controller.yaml" command="load"/>
-    <node name="cartesian_controller_spawner" pkg="controller_manager" type="spawner" output="screen"  args="cartesian_controller" />
+<!--    <rosparam file="$(find schunk_lwa4p_control)/config/joint_state_controller.yaml" command="load"/>
+    <node name="joint_state_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="joint_state_controller" />
 
+    <rosparam file="$(find schunk_lwa4p_control)/config/velocity_trajectory_controller.yaml" command="load"/>
+    <node name="elocity_trajectory_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="velocity_trajectory_controller" />
+ 
+    <rosparam file="$(find schunk_lwa4p_control)/config/gripper_controller.yaml" command="load"/>
+    <node name="gripper_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="gripper_controller" />
+                                                                                                                                                                                                                                        
+    <rosparam file="$(find schunk_lwa4p_control)/config/cartesian_controller.yaml" command="load"/>
+-->
+    <!--node name="cartesian_controller_spawner" pkg="controller_manager" type="spawner" output="screen"  args="cartesian_controller" /-->
 
 </launch> 

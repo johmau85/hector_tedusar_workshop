@@ -42,6 +42,7 @@
 #include <ros/ros.h>
 #include <hardware_interface/joint_command_interface.h>
 #include <hardware_interface/joint_state_interface.h>
+#include <joint_limits_interface/joint_limits_interface.h>
 #include <hardware_interface/robot_hw.h>
 #include <schunk_lwa4p_control/weiss_wsg_gripper_control.hpp>
 
@@ -55,8 +56,8 @@ public:
 
     void cleanup();
 
-    void read();
-    void write();
+    void read(ros::Time time, ros::Duration period);
+    void write(ros::Time time, ros::Duration period);
 
 private:
     ros::NodeHandle nh_;
@@ -65,6 +66,7 @@ private:
 
     hardware_interface::JointStateInterface joint_state_interface_;
     hardware_interface::VelocityJointInterface velocity_joint_interface_;
+    joint_limits_interface::VelocityJointSoftLimitsInterface  velocity_joint_limit_interface_;
     hardware_interface::PositionJointInterface position_joint_interface_;
 
     std::map<std::string, double> joint_vel_cmds_;
