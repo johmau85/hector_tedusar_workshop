@@ -3,8 +3,6 @@
 
     <!-- send lwa4p urdf to param server -->
     <param name="robot_description" command="$(find xacro)/xacro.py '$(find schunk_lwa4p_control)/urdf/lwa4p.urdf.xacro'" />
-    
-    <rosparam command="load" file="$(find schunk_lwa4p_moveit_config)/config/joint_limits.yaml"/>
         
     <!-- robot state publisher -->
     <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher"/>
@@ -17,7 +15,7 @@
         <rosparam command="load" ns="arm_controller" file="$(find schunk_lwa4p_control)/config/controller.yaml" />
     </node>
             
-<!--    <rosparam file="$(find schunk_lwa4p_control)/config/joint_state_controller.yaml" command="load"/>
+    <rosparam file="$(find schunk_lwa4p_control)/config/joint_state_controller.yaml" command="load"/>
     <node name="joint_state_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="joint_state_controller" />
 
     <rosparam file="$(find schunk_lwa4p_control)/config/velocity_trajectory_controller.yaml" command="load"/>
@@ -27,7 +25,6 @@
     <node name="gripper_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="gripper_controller" />
                                                                                                                                                                                                                                         
     <rosparam file="$(find schunk_lwa4p_control)/config/cartesian_controller.yaml" command="load"/>
--->
     <!--node name="cartesian_controller_spawner" pkg="controller_manager" type="spawner" output="screen"  args="cartesian_controller" /-->
 
 </launch> 

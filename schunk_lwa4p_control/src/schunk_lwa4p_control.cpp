@@ -140,13 +140,6 @@ SchunkLWA4P::SchunkLWA4P()
         canopen::incomingEMCYHandlers[ 0x081 + it.first ] = [it](const TPCANRdMsg mE) { canopen::defaultEMCY_incoming( it.first, mE ); };
     }
 
-//    for(std::map<uint8_t, canopen::Device>::iterator it = canopen::devices.begin(); it != canopen::devices.end(); ++it)
-//    {
-//        canopen::incomingPDOHandlers[ 0x180 + it->first ] = boost::bind(&canopen::defaultPDO_incoming_status, it->first, _1);
-//        canopen::incomingPDOHandlers[ 0x480 + it->first ] = boost::bind(&canopen::defaultPDO_incoming_pos, it->first, _1);
-//        canopen::incomingEMCYHandlers[ 0x081 + it->first ] = boost::bind(&canopen::defaultEMCY_incoming, it->first, _1);
-//    }
-
     bool init_success = canopen::init(device, chain_name_, canopen::syncInterval);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
@@ -184,13 +177,7 @@ SchunkLWA4P::SchunkLWA4P()
             ROS_WARN_STREAM("No urdf soft-limits defined for joint: " << joint_names[i]);
         }
 
-        if(!joint_limits_interface::getJointLimits(joint_names[i], nh_, limits))
-        {
-            ROS_WARN_STREAM("No param limits defined for joint: " << joint_names[i]);
-        }
-
         joint_limits_interface::VelocityJointSoftLimitsHandle vel_joint_lim_handle(vel_handle, limits, soft_limits);
-
         velocity_joint_limit_interface_.registerHandle(vel_joint_lim_handle);
     }
 
@@ -217,11 +204,11 @@ void SchunkLWA4P::read(ros::Time time, ros::Duration period)
 {
     canopen::DeviceGroup dg = canopen::deviceGroups[chain_name_];
 
-    for (std::vector<uint8_t>::iterator it = dg.getCANids().begin(); it != dg.getCANids().end(); ++it)
+    for (auto id : dg.getCANids())
     {
-        std::string joint_name = canopen::devices[*it].getName();
-        joint_positions_[joint_name] = canopen::devices[*it].getActualPos();
-        joint_velocitys_[joint_name] = canopen::devices[*it].getActualVel();
+        std::string joint_name = canopen::devices[id].getName();
+        joint_positions_[joint_name] = canopen::devices[id].getActualPos();
+        joint_velocitys_[joint_name] = canopen::devices[id].getActualVel();
     }
 
     //ROS_INFO("%s: before weiss_wsg_gripper_.read", __func__);
