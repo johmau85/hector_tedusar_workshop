@@ -5,7 +5,7 @@ velocity_joint_mode_controller:
 
 
 # Velocity - Right and Left Joint Velocity Trajectory Controllers -------------------
-velocity_trajectory_controller:
+arm_controller:
     type: "velocity_controllers/JointTrajectoryController"
     joints:
       - arm_1_joint

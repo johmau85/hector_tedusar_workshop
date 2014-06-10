@@ -41,15 +41,20 @@
 
 #include <controller_interface/controller.h>
 #include <hardware_interface/joint_command_interface.h>
-#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/TwistStamped.h>
 
 #include <boost/scoped_ptr.hpp>
 #include <kdl/chain.hpp>
+#include <kdl/tree.hpp>
 #include <kdl/chainjnttojacsolver.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/frames.hpp>
 #include <kdl/jacobian.hpp>
 #include <kdl/jntarray.hpp>
+#include <kdl/chainiksolver.hpp>
+#include <kdl/chainiksolvervel_pinv.hpp>
+#include <kdl/chainfksolver.hpp>
+#include <kdl/chainfksolverpos_recursive.hpp>
 
 namespace velocity_controllers
 {
@@ -68,33 +73,27 @@ private:
     hardware_interface::JointHandle joint_;
     ros::Subscriber vel_cmd_sub_;
 
+    KDL::Tree kdl_tree_;
     KDL::Chain kdl_chain_;
     std::vector<hardware_interface::JointHandle> joint_handles_;
 
-    // KDL Solvers performing the actual computations
-    boost::scoped_ptr<KDL::ChainFkSolverPos>    joint_to_pose_solver_;
-    boost::scoped_ptr<KDL::ChainJntToJacSolver> joint_to_jacobian_solver_;
+    boost::scoped_ptr<KDL::ChainIkSolverVel> chain_ik_solver_vel_;
+    boost::scoped_ptr<KDL::ChainFkSolverPos> chain_fk_solver_;
 
-    // The variables (which need to be pre-allocated).
-    KDL::JntArray  q0_;           // Joint initial positions
-    KDL::JntArrayVel  jnt_posvel_;      // Joint positions and velocities
+    KDL::Twist  cmd_twist_;
 
-    KDL::JntArray joint_vel_;
+    std::string root_name_, tip_name_;
 
-    KDL::Frame     x_;            // Tip pose
-    KDL::Frame     xd_;           // Tip desired pose
-    KDL::Frame     x0_;           // Tip initial pose
+    bool tip_twist_;
 
-    KDL::Twist     xerr_;         // Cart error
-    KDL::Twist  cmd_value_;
-    KDL::Twist     xdot_;         // Cart velocity
-    KDL::Wrench    F_;            // Cart effort
-    KDL::Jacobian  J_;            // Jacobian
+    bool got_msg_;
 
     ros::Time last_msg_;
     ros::Duration dead_man_timeout_;
 
-    void velCmdCB(const geometry_msgs::TwistConstPtr& msg);
+    double joint_vel_limit_;
+
+    void velCmdCB(const geometry_msgs::TwistStampedConstPtr& msg);
 };
 
 }
