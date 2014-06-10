@@ -8,7 +8,10 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   joy
   roscpp
+  actionlib
+  actionlib_msgs
   sensor_msgs
+  control_msgs
 )
 
 ## System dependencies are found with CMake's conventions
