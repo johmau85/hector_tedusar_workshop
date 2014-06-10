@@ -186,6 +186,11 @@ void Gripper::stop()
   transceivePacket(CMD_STOP, 0, GripperPacketPayload::EMPTY_PAYLOAD, 0);
 }
 
+void Gripper::transmitStopCommand()
+{
+    transmitPacket(CMD_STOP, GripperPacketPayload::EMPTY_PAYLOAD);
+}
+
 void Gripper::issueFastStop()
 {
   transceivePacket(CMD_ISSUE_FAST_STOP, 0, GripperPacketPayload::EMPTY_PAYLOAD,

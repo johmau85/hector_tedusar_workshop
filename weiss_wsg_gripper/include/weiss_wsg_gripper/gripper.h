@@ -153,11 +153,16 @@ public:
 
   void prepositionFingers(BlockingBehaviour bb, MovementType mt, float width,
       float speed);
+
   // Quickfix for schunk_lpa4w_control: executes Preposition Fingers command without waiting for result.
   void transmitPrepositionFingersCommand(BlockingBehaviour bb, MovementType mt, float width,
       float speed);
 
   void stop();
+
+  // Quickfix for schunk_lpa4w_control: executes Preposition Fingers command without waiting for result.
+  void transmitStopCommand();
+
   void issueFastStop();
   void acknowledgeFastStop();
   void graspPart(float width, float speed);

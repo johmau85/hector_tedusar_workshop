@@ -43,6 +43,7 @@
 #include <boost/thread/mutex.hpp>
 #include <hardware_interface/robot_hw.h>
 #include <weiss_wsg_gripper/gripper.h>
+#include <ros/duration.h>
 
 namespace schunk_lwa4p_control
 {
@@ -51,11 +52,14 @@ class WeissWsgGripperControl
 {
 public:
     struct Parameters {
+        Parameters();
+
         std::string joint_name_left_;
         std::string joint_name_right_;
         int can_id_;
         double default_velocity_;
         double default_effort_;
+        ros::Duration command_timeout_;
     };
 
     WeissWsgGripperControl();
@@ -77,6 +81,17 @@ private:
         double commanded_position_;
     };
 
+    enum State
+    {
+        STATE_IDLE,
+        STATE_WAITING_FOR_MOVE_COMMAND_RESULT,
+        STATE_MOVING,
+        STATE_WAITING_FOR_STOP_COMMAND_RESULT,
+        STATE_FAST_STOP
+    };
+
+    bool transmitMoveCommand(double commanded_position);
+    bool transmitStopCommand();
     void registerJoint(hardware_interface::RobotHW & robot_hw, const std::string & name, JointInfo & joint_info);
     void handleAsyncPacket(const weiss_wsg_gripper::Gripper::AsyncPacketInfo & packet);
 
@@ -84,9 +99,12 @@ private:
     JointInfo left_joint_;
     JointInfo right_joint_;
     double last_commanded_position_;
+    ros::Time command_transmitted_time_;
+
     boost::shared_ptr<weiss_wsg_gripper::Gripper> gripper_;
 
-    boost::mutex current_data_lock_;
+    boost::mutex current_state_lock_;
+    State state_;
     double current_position_;
     double current_velocity_;
     double current_effort_;
