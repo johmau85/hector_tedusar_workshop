@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   controller_manager
   roscpp
   urdf
+  joint_limits_interface
 )
 
 ## System dependencies are found with CMake's conventions
