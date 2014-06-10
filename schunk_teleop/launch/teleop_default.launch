@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="controller" default="default" />
+
+    <node pkg="schunk_teleop" type="schunk_teleop_node" name="schunk_teleop_node" output="screen">
+        <param name="frame_id" value="arm_6_link"/>
+        <param name="std_translation_vel" value="0.2"/>
+        <param name="std_rotation_vel" value="0.2"/>
+        
+        <rosparam file="$(find schunk_teleop)/config/controller_$(arg controller).yaml" />
+    </node>
+
+    <node pkg="joy" type="joy_node" name="joy_node" />
+
+</launch>
