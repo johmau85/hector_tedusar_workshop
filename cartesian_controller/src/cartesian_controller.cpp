@@ -45,121 +45,147 @@ PLUGINLIB_EXPORT_CLASS(velocity_controllers::CartesianController, controller_int
 namespace velocity_controllers
 {
 
-bool CartesianController::init(hardware_interface::VelocityJointInterface* hw, ros::NodeHandle &nh)
-{
-    std::string robot_description, root_name, tip_name;
-
-    if(!nh.searchParam("robot_description", robot_description))
+    bool CartesianController::init(hardware_interface::VelocityJointInterface* hw, ros::NodeHandle &nh)
     {
-        ROS_ERROR("Failed to get robot_description parameter");
-        return false;
-    }
+        std::string robot_description, root_name, tip_name;
 
-    if (!nh.getParam("root_name", root_name))
-    {
-        ROS_ERROR("Failed to get root_name parameter");
-        return false;
-    }
-
-    if (!nh.getParam("tip_name", tip_name))
-    {
-        ROS_ERROR("Failed to get tip_name parameter");
-        return false;
-    }
-
-    KDL::Tree kdl_tree;
-    if (!kdl_parser::treeFromParam(robot_description, kdl_tree)){
-        ROS_ERROR("Failed to construct kdl tree from robot description parameter");
-        return false;
-    }
-
-    // Populate the KDL chain
-    if(!kdl_tree.getChain(root_name, tip_name, kdl_chain_))
-    {
-        ROS_ERROR_STREAM("Failed to get KDL chain from tree.");
-        return false;
-    }
-
-
-    // Get joint handles for all of the joints in the chain
-    for(std::vector<KDL::Segment>::const_iterator it = kdl_chain_.segments.begin(); it != kdl_chain_.segments.end(); ++it)
-    {
-        joint_handles_.push_back(hw->getHandle(it->getJoint().getName()));
-    }
-
-    // Construct the kdl solvers in non-realtime.
-    joint_to_pose_solver_.reset(new KDL::ChainFkSolverPos_recursive(kdl_chain_));
-    joint_to_jacobian_solver_.reset(new KDL::ChainJntToJacSolver(kdl_chain_));
-
-    // Resize (pre-allocate) the variables in non-realtime.
-    jnt_posvel_.resize(kdl_chain_.getNrOfJoints());
-    joint_vel_.resize(kdl_chain_.getNrOfJoints());
-    q0_.resize(kdl_chain_.getNrOfJoints());
-    J_.resize(kdl_chain_.getNrOfJoints());
-
-    vel_cmd_sub_ = nh.subscribe<geometry_msgs::Twist>("vel_cmd", 1, &CartesianController::velCmdCB, this);
-
-    return true;
-}
-
-void CartesianController::update(const ros::Time& time, const ros::Duration& period)
-{
-    // get joint positions
-    for(size_t i=0; i<joint_handles_.size(); i++)
-    {
-        jnt_posvel_.q(i) = joint_handles_[i].getPosition();
-        jnt_posvel_.qdot(i) = joint_handles_[i].getVelocity();
-    }
-
-    // Compute the forward kinematics and Jacobian (at this location).
-    joint_to_pose_solver_->JntToCart(jnt_posvel_.q, x_);
-    joint_to_jacobian_solver_->JntToJac(jnt_posvel_.q, J_);
-
-    // Convert the wrench into joint efforts
-    for (unsigned int i = 0; i < kdl_chain_.getNrOfJoints(); i++)
-    {
-        joint_vel_(i) = 0;
-        for (unsigned int j=0; j<6; j++) {
-            joint_vel_(i) += (J_(j,i) * cmd_value_(j));
+        if(!nh.searchParam("robot_description", robot_description))
+        {
+            ROS_ERROR("Failed to get robot_description parameter");
+            return false;
         }
 
-        // Set the joint effort
-        joint_handles_[i].setCommand(joint_vel_(i));
-    }
-}
+        if (!nh.getParam("root_name", root_name))
+        {
+            ROS_ERROR("Failed to get root_name parameter");
+            return false;
+        }
 
-void CartesianController::starting(const ros::Time& time)
-{
-    // Get the current joint values to compute the initial tip location.
-    // get joint positions
-    for(size_t i=0; i<joint_handles_.size(); i++)
+        if (!nh.getParam("tip_name", tip_name))
+        {
+            ROS_ERROR("Failed to get tip_name parameter");
+            return false;
+        }
+
+        KDL::Tree kdl_tree;
+        if (!kdl_parser::treeFromParam(robot_description, kdl_tree)){
+            ROS_ERROR("Failed to construct kdl tree from robot description parameter");
+            return false;
+        }
+
+        // Populate the KDL chain
+        if(!kdl_tree.getChain(root_name, tip_name, kdl_chain_))
+        {
+            ROS_ERROR_STREAM("Failed to get KDL chain from tree.");
+            return false;
+        }
+
+
+        // Get joint handles for all of the joints in the chain
+        for(std::vector<KDL::Segment>::const_iterator it = kdl_chain_.segments.begin(); it != kdl_chain_.segments.end(); ++it)
+        {
+            joint_handles_.push_back(hw->getHandle(it->getJoint().getName()));
+        }
+
+        // Construct the kdl solvers in non-realtime.
+        joint_to_pose_solver_.reset(new KDL::ChainFkSolverPos_recursive(kdl_chain_));
+        joint_to_jacobian_solver_.reset(new KDL::ChainJntToJacSolver(kdl_chain_));
+
+        // Resize (pre-allocate) the variables in non-realtime.
+        jnt_posvel_.resize(kdl_chain_.getNrOfJoints());
+        joint_vel_.resize(kdl_chain_.getNrOfJoints());
+        q0_.resize(kdl_chain_.getNrOfJoints());
+        J_.resize(kdl_chain_.getNrOfJoints());
+
+        vel_cmd_sub_ = nh.subscribe<geometry_msgs::Twist>("vel_cmd", 1, &CartesianController::velCmdCB, this);
+
+        double dead_man_timeout;
+        nh.param<double>("dead_man_timeout", dead_man_timeout, 0.2);
+        dead_man_timeout_ = ros::Duration(dead_man_timeout);
+
+        return true;
+    }
+
+    void CartesianController::update(const ros::Time& time, const ros::Duration& period)
     {
-        q0_(i) = joint_handles_[i].getPosition();
+        if((time - last_msg_) >= dead_man_timeout_)
+        {
+            cmd_value_[0] = 0.0;
+            cmd_value_[1] = 0.0;
+            cmd_value_[2] = 0.0;
+            cmd_value_[3] = 0.0;
+            cmd_value_[4] = 0.0;
+            cmd_value_[5] = 0.0;
+
+            ROS_WARN("Time out");
+        }
+
+        // get joint positions
+        for(size_t i=0; i<joint_handles_.size(); i++)
+        {
+            jnt_posvel_.q(i) = joint_handles_[i].getPosition();
+            jnt_posvel_.qdot(i) = joint_handles_[i].getVelocity();
+        }
+
+        // Compute the forward kinematics and Jacobian (at this location).
+        joint_to_pose_solver_->JntToCart(jnt_posvel_.q, x_);
+        joint_to_jacobian_solver_->JntToJac(jnt_posvel_.q, J_);
+
+//        for (unsigned int i = 0 ; i < 6 ; i++)
+//        {
+//            xdot_(i) = 0;
+//            for (unsigned int j = 0 ; j < kdl_chain_.getNrOfJoints() ; j++)
+//                xdot_(i) += J_(i,j) * qdot_.qdot(j);
+//        }
+
+        // Convert the wrench into joint efforts
+        for (unsigned int i = 0; i < kdl_chain_.getNrOfJoints(); i++)
+        {
+            joint_vel_(i) = 0;
+            for (unsigned int j=0; j<6; j++) {
+                joint_vel_(i) += (J_(j,i) * cmd_value_[j]);
+            }
+
+            // Set the joint effort
+            joint_handles_[i].setCommand(joint_vel_(i));
+        }
     }
-    joint_to_pose_solver_->JntToCart(q0_, x0_);
 
-    cmd_value_[0] = 0.0;
-    cmd_value_[1] = 0.0;
-    cmd_value_[2] = 0.0;
-    cmd_value_[3] = 0.0;
-    cmd_value_[4] = 0.0;
-    cmd_value_[5] = 0.0;
+    void CartesianController::starting(const ros::Time& time)
+    {
+        // Get the current joint values to compute the initial tip location.
+        // get joint positions
+        for(size_t i=0; i<joint_handles_.size(); i++)
+        {
+            q0_(i) = joint_handles_[i].getPosition();
+        }
+        joint_to_pose_solver_->JntToCart(q0_, x0_);
 
-}
+        cmd_value_[0] = 0.0;
+        cmd_value_[1] = 0.0;
+        cmd_value_[2] = 0.0;
+        cmd_value_[3] = 0.0;
+        cmd_value_[4] = 0.0;
+        cmd_value_[5] = 0.0;
 
-void CartesianController::stopping(const ros::Time& time)
-{
+        last_msg_ = ros::Time::now();
+    }
 
-}
+    void CartesianController::stopping(const ros::Time& time)
+    {
 
-void CartesianController::velCmdCB(const geometry_msgs::TwistConstPtr& msg)
-{
-    cmd_value_[0] = msg->linear.x;
-    cmd_value_[1] = msg->linear.y;
-    cmd_value_[2] = msg->linear.z;
-    cmd_value_[3] = msg->angular.x;
-    cmd_value_[4] = msg->angular.y;
-    cmd_value_[5] = msg->angular.z;
-}
+    }
+
+    void CartesianController::velCmdCB(const geometry_msgs::TwistConstPtr& msg)
+    {
+        cmd_value_[0] = msg->linear.x;
+        cmd_value_[1] = msg->linear.y;
+        cmd_value_[2] = msg->linear.z;
+        cmd_value_[3] = msg->angular.x;
+        cmd_value_[4] = msg->angular.y;
+        cmd_value_[5] = msg->angular.z;
+
+        last_msg_ = ros::Time::now();
+    }
 
 }

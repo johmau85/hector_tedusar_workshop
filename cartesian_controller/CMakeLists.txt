@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(cartesian_controller)
 
 ## Find catkin macros and libraries
-find_package(catkin REQUIRED roscpp control_toolbox controller_interface hardware_interface realtime_tools kdl_parser)
+find_package(catkin REQUIRED roscpp control_toolbox controller_interface hardware_interface realtime_tools kdl_parser joint_trajectory_controller)
 
 
 ## System dependencies are found with CMake's conventions
