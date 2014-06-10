@@ -24,7 +24,7 @@ void SchunkTeleopNode::init()
         &SchunkTeleopNode::joyCB, this);
 
     if (parameters_.have_gripper_)
-        gripper_command_ac_.reset(new GripperCommandActionClient("/gripper_controller/gripper_command", true));
+        gripper_command_ac_.reset(new GripperCommandActionClient("/gripper_controller/gripper_cmd", true));
 }
 
 void SchunkTeleopNode::loadParameters()
@@ -34,8 +34,8 @@ void SchunkTeleopNode::loadParameters()
     getOptionalParameter(private_nh, "publication_rate", parameters_.publication_rate_, 20.0);
     getRequiredParameter(private_nh, "frame_id", parameters_.frame_id_);
 
-    getOptionalParameter(private_nh, "std_translation_vel", parameters_.std_translation_vel_, 0.2);
-    getOptionalParameter(private_nh, "std_rotation_vel", parameters_.std_rotation_vel_, 0.2);
+    getOptionalParameter(private_nh, "std_translation_vel", parameters_.std_translation_vel_, 0.01);
+    getOptionalParameter(private_nh, "std_rotation_vel", parameters_.std_rotation_vel_, 0.1);
 
     getOptionalParameter(private_nh, "have_gripper", parameters_.have_gripper_, true);
     getOptionalParameter(private_nh, "gripper_grasp_position", parameters_.gripper_grasp_position_, 0.0);
