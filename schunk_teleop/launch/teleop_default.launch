@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="controller" default="default" />
+
+    <node pkg="schunk_teleop" type="schunk_teleop_node" name="schunk_teleop_node" >
+        <remap from="cmd_vel" to="cmd_vel"/>
+
+        <param name="std_trans_vel" value="0.3"/>
+        <param name="std_rot_vel" value="0.5"/>
+        <param name="std_delta_pitch" value="0.02"/>
+        <param name="std_delta_yaw" value="0.02"/>
+        
+        <rosparam file="$(find schunk_teleop)/config/controller_$(arg controller).yaml" />
+    </node>
+
+    <node pkg="joy" type="joy_node" name="joy_node" />
+
+</launch>
