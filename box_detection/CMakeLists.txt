@@ -10,7 +10,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
   moveit_msgs
-  message_generation
+  actionlib
+  actionlib_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -54,21 +55,21 @@ find_package(Boost REQUIRED COMPONENTS thread)
 # )
 
 ## Generate services in the 'srv' folder
-add_service_files(
-  FILES
-  DetectBoxes.srv
-)
+# add_service_files(
+#   FILES
+#   DetectBoxes.srv
+# )
 
 ## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+add_action_files(
+  FILES
+  BoxDetection.action
+)
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
+  actionlib_msgs
   geometry_msgs
 )
 
@@ -84,7 +85,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES box_detection
-  CATKIN_DEPENDS message_runtime
+  CATKIN_DEPENDS actionlib_msgs
 #  DEPENDS system_lib
 )
 
@@ -98,6 +99,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
@@ -110,7 +112,9 @@ add_executable(box_detection src/box_detection_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(box_detection_node box_detection_generate_messages_cpp)
+add_dependencies(box_detection
+  ${box_detection_EXPORTED_TARGETS}
+)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(box_detection

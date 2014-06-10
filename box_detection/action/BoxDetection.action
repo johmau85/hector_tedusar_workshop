@@ -1,0 +1,8 @@
+# Goal:
+---
+# Result:
+geometry_msgs/Pose[] box_poses
+---
+# Feedback:
+geometry_msgs/Pose box_pose
+

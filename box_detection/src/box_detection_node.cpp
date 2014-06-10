@@ -1,6 +1,13 @@
 #include <box_detection/box_detection_node.h>
+#include <boost/bind.hpp>
+#include <pcl/conversions.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/voxel_grid.h>
+#include <Eigen/Geometry>
 
-#include <iostream>
+/*#include <iostream>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition.hpp>
 #include <tf/transform_listener.h>
@@ -12,7 +19,6 @@
 #include <moveit_msgs/CollisionObject.h>
 #include <geometry_msgs/Pose.h>
 
-#include <Eigen/Geometry>
 
 #include <pcl/common/common.h>
 #include <pcl/common/pca.h>
@@ -21,21 +27,14 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/kdtree/kdtree.h>
-#include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
-#include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/surface/convex_hull.h>
+#include <pcl/conversions.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <box_detection/DetectBoxes.h>
-
-#if PCL_MAJOR_VERSION == 1 && PCL_MINOR_VERSION >= 7
-  #include <pcl/conversions.h>
-#else
-  #include <pcl/ros/conversions.h>
-#endif
+#include <box_detection/DetectBoxes.h>*/
 
 static const double BOX_AREA = 0.09 * 0.3;
 static const double BOX_AREA_FACTOR = 0.8;
@@ -47,13 +46,167 @@ namespace box_detection
 {
 
 BoxDetectionNode::BoxDetectionNode()
+    : box_detection_as_(nh_, "detect_boxes", false)
 {
     pcl::console::setVerbosityLevel(pcl::console::L_VERBOSE);
 
-    pub_cloud_plane = nh.advertise<sensor_msgs::PointCloud2>("cloud_plane", 1);
+    pub_cloud_plane = nh_.advertise<sensor_msgs::PointCloud2>("cloud_plane", 1);
+
+    box_detection_as_.registerGoalCallback(boost::bind(&BoxDetectionNode::boxDetectionActionGoalCallback, this));
+    box_detection_as_.registerPreemptCallback(boost::bind(&BoxDetectionNode::boxDetectionActionPreemptCallback, this));
+    box_detection_as_.start();
+}
+
+void BoxDetectionNode::boxDetectionActionGoalCallback()
+{
+    box_detection_as_.acceptNewGoal();
+
+    try
+    {
+      tf_listener_.waitForTransform("base_link", "camera_depth_optical_frame", ros::Time::now(), ros::Duration(10.0));
+    }
+    catch (tf::TransformException & ex)
+    {
+      ROS_ERROR_STREAM("TransformException: " << ex.what());
+      box_detection_as_.setAborted(BoxDetectionResult(), "transformation failed");
+      return;
+    }
+
+    // Subscribe to pointcloud:
+    point_cloud_subscriber_ = nh_.subscribe("/camera/depth/points", 1, &BoxDetectionNode::pointCloudCallback, this);
+    start_time_ = ros::Time::now();
+}
+
+void BoxDetectionNode::boxDetectionActionPreemptCallback()
+{
+    box_detection_as_.setPreempted();
+}
+
+void BoxDetectionNode::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr & msg)
+{
+    PclPointCloud::Ptr cloud = boost::make_shared<PclPointCloud>();
+    PclPointCloud::Ptr cloud_plane = boost::make_shared<PclPointCloud>();
+    PclPointCloud::Ptr cloud_rest = boost::make_shared<PclPointCloud>();
+    PclPointCloud::Ptr cloud_filtered = boost::make_shared<PclPointCloud>();
+    PclPointCloud::Ptr cloud_transformed = boost::make_shared<PclPointCloud>();
+
+    pcl::fromROSMsg(*msg, *cloud);
+
+    bool box_found = false;
+    ros::Duration duration;
+    do
+    {
+        pcl::PointIndices::Ptr inliers = boost::make_shared<pcl::PointIndices>();
+        fitPlane(cloud, inliers);
+
+        if (inliers->indices.size() < MIN_POINTS_PER_BOX)
+        {
+            break; // not enough points found
+        }
+
+        extractPlane(cloud, inliers, *cloud_plane, *cloud_rest);
+
+        downsampleCloud(cloud_plane, *cloud_filtered);
+
+        transformCloud(cloud_filtered, *cloud_transformed);
+
+        // LASTTIME
+
+        std::vector<pcl::PointIndices> cluster_indices;
+        clusterizeCloud(cloud_transformed, cluster_indices);
+
+        for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
+        {
+            PclPointCloud cloud_cluster;
+            for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); pit++)
+            {
+                cloud_cluster.points.push_back(cloud_transformed.points[*pit]);
+            }
+
+            box_found |= checkClusterForBox(cloud_cluster);
+            if (box_found)
+            {
+                break;  // one found box is enough
+            }
+        }
+
+        cloud = cloud_rest;
+        duration = ros::Time::now() - start_time;
+    } while (!box_found && duration.toSec() < DETECTION_TIMEOUT);
+
+    boxes_detected = true;
+    sub_pointcloud.shutdown();
 }
 
 
+void BoxDetectionNode::fitPlane(const PclPointCloud::ConstPtr & cloud, pcl::PointIndices::Ptr & inliers)
+{
+    pcl::SACSegmentation<pcl::PointXYZ> segmentation;
+
+    segmentation.setModelType(pcl::SACMODEL_PLANE);
+    segmentation.setMethodType(pcl::SAC_RANSAC);
+    segmentation.setAxis(Eigen::Vector3f::UnitZ());
+    segmentation.setEpsAngle(0.15);
+    segmentation.setMaxIterations(50);
+    segmentation.setDistanceThreshold(0.02);
+    segmentation.setInputCloud(cloud);
+
+    //seg.setOptimizeCoefficients(true);
+
+    pcl::ModelCoefficients coefficients;
+    segmentation.segment(*inliers, coefficients);
+}
+
+void BoxDetectionNode::extractPlane(const PclPointCloud::ConstPtr & cloud,
+                                    pcl::PointIndices::ConstPtr & inliers,
+                                    PclPointCloud & cloud_plane,
+                                    PclPointCloud & cloud_rest)
+{
+  pcl::ExtractIndices<pcl::PointXYZ> extract;
+
+  extract.setInputCloud(cloud);
+  extract.setIndices(inliers);
+
+  extract.setNegative(false);
+  extract.filter(cloud_plane);
+
+  extract.setNegative(true);
+  extract.filter(cloud_rest);
+}
+
+void BoxDetectionNode::downsampleCloud(const PclPointCloud::ConstPtr & cloud, PclPointCloud & cloud_filtered)
+{
+  pcl::VoxelGrid<pcl::PointXYZ> sor;
+  sor.setInputCloud(cloud);
+  sor.setLeafSize(0.01, 0.01, 0.01);
+  sor.filter(cloud_filtered);
+}
+
+void BoxDetectionNode::transformCloud(const PclPointCloud::ConstPtr & cloud, PclPointCloud & cloud_transformed)
+{
+  sensor_msgs::PointCloud pcin, pcout;
+  pcin.header.frame_id = "camera_depth_optical_frame";
+
+  for (PclPointCloud::const_iterator pit = cloud->begin(); pit != cloud->end(); pit++)
+  {
+    geometry_msgs::Point32 point;
+    point.x = pit->x;
+    point.y = pit->y;
+    point.z = pit->z;
+    pcin.points.push_back(point);
+  }
+
+  tf_listener_.transformPointCloud("base_link", pcin, pcout);
+
+  for (std::vector<geometry_msgs::Point32>::const_iterator pit = pcout.points.begin(); pit != pcout.points.end(); pit++)
+  {
+    pcl::PointXYZ point;
+    point.x = pit->x;
+    point.y = pit->y;
+    point.z = pit->z;
+    cloud_transformed.push_back(point);
+  }
+}
 
 
 
@@ -130,7 +283,7 @@ ros::Time start_time;
 
 
 void convertROSMessageToPointCloud(const sensor_msgs::PointCloud2ConstPtr& msg,
-  pcl::PointCloud<pcl::PointXYZ>& cloud)
+  PclPointCloud& cloud)
 {
   #if PCL_MAJOR_VERSION == 1 && PCL_MINOR_VERSION >= 7
     pcl::PCLPointCloud2 pcl_pc;
@@ -141,7 +294,7 @@ void convertROSMessageToPointCloud(const sensor_msgs::PointCloud2ConstPtr& msg,
   #endif
 }
 
-void convertPointCloudToROSMessage(pcl::PointCloud<pcl::PointXYZ>& cloud,
+void convertPointCloudToROSMessage(PclPointCloud& cloud,
   sensor_msgs::PointCloud2& msg)
 {
   #if PCL_MAJOR_VERSION == 1 && PCL_MINOR_VERSION >= 7
@@ -151,44 +304,12 @@ void convertPointCloudToROSMessage(pcl::PointCloud<pcl::PointXYZ>& cloud,
   #endif
 }
 
-void fitPlane(pcl::PointCloud<pcl::PointXYZ>& cloud,
-  pcl::ModelCoefficients::Ptr& coefficients,
-  pcl::PointIndices::Ptr& inliers)
-{
-  // Create the segmentation object
-  pcl::SACSegmentation<pcl::PointXYZ> seg;
-  seg.setModelType(pcl::SACMODEL_PLANE);
-  seg.setMethodType(pcl::SAC_RANSAC);
-  seg.setAxis(Eigen::Vector3f::UnitZ());
-  seg.setEpsAngle(0.15);
-  seg.setMaxIterations(50);
-  seg.setDistanceThreshold(0.02);
-  seg.setInputCloud(cloud.makeShared());
-  //seg.setOptimizeCoefficients(true);
 
-  seg.segment(*inliers, *coefficients);
-}
 
-void extractPlane(pcl::PointCloud<pcl::PointXYZ>& cloud,
-  pcl::PointIndices::Ptr& inliers,
-  pcl::PointCloud<pcl::PointXYZ>& cloud_plane,
-  pcl::PointCloud<pcl::PointXYZ>& cloud_rest)
-{
-  pcl::ExtractIndices<pcl::PointXYZ> extract;
-  extract.setInputCloud(cloud.makeShared());
-  extract.setIndices(inliers);
-
-  extract.setNegative(false);
-  extract.filter(cloud_plane);
-
-  extract.setNegative(true);
-  extract.filter(cloud_rest);
-}
-
-double computeArea(pcl::PointCloud<pcl::PointXYZ>& cloud,
+double computeArea(PclPointCloud& cloud,
   pcl::ConvexHull<pcl::PointXYZ>& convex_hull)
 {
-  pcl::PointCloud<pcl::PointXYZ> cloud_hull;
+  PclPointCloud cloud_hull;
 
   convex_hull.setInputCloud(cloud.makeShared());
   convex_hull.setDimension(2);
@@ -197,8 +318,8 @@ double computeArea(pcl::PointCloud<pcl::PointXYZ>& cloud,
   return convex_hull.getTotalArea();
 }
 
-void downsampleCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
-  pcl::PointCloud<pcl::PointXYZ>& cloud_filtered)
+void downsampleCloud(PclPointCloud& cloud,
+  PclPointCloud& cloud_filtered)
 {
   pcl::VoxelGrid<pcl::PointXYZ> sor;
   sor.setInputCloud(cloud.makeShared());
@@ -206,13 +327,13 @@ void downsampleCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
   sor.filter(cloud_filtered);
 }
 
-void transformCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
-  pcl::PointCloud<pcl::PointXYZ>& cloud_transformed)
+void transformCloud(PclPointCloud& cloud,
+  PclPointCloud& cloud_transformed)
 {
   sensor_msgs::PointCloud pcin, pcout;
   pcin.header.frame_id = "camera_depth_optical_frame";
 
-  for (pcl::PointCloud<pcl::PointXYZ>::const_iterator pit = cloud.begin(); pit != cloud.end(); pit++)
+  for (PclPointCloud::const_iterator pit = cloud.begin(); pit != cloud.end(); pit++)
   {
     geometry_msgs::Point32 point;
     point.x = pit->x;
@@ -235,7 +356,7 @@ void transformCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
   }
 }
 
-void clusterizeCloud(pcl::PointCloud<pcl::PointXYZ>& cloud,
+void clusterizeCloud(PclPointCloud& cloud,
   std::vector<pcl::PointIndices>& cluster_indices)
 {
   pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
@@ -291,7 +412,7 @@ void publishCollisionObject(pcl::PointXYZ& position, Eigen::Quaternion<float>& o
   pub_planning_scene_diff.publish(planning_scene);
 }
 
-bool checkClusterForBox(pcl::PointCloud<pcl::PointXYZ>& cloud)
+bool checkClusterForBox(PclPointCloud& cloud)
 {
   pcl::ConvexHull<pcl::PointXYZ> convex_hull;
   double area = computeArea(cloud, convex_hull);
@@ -338,99 +459,6 @@ bool checkClusterForBox(pcl::PointCloud<pcl::PointXYZ>& cloud)
   return false;
 }
 
-void cloudCallback(const sensor_msgs::PointCloud2ConstPtr& msg)
-{
-  pcl::PointCloud<pcl::PointXYZ> cloud;
-  pcl::PointCloud<pcl::PointXYZ> cloud_plane;
-  pcl::PointCloud<pcl::PointXYZ> cloud_rest;
-  pcl::PointCloud<pcl::PointXYZ> cloud_filtered;
-  pcl::PointCloud<pcl::PointXYZ> cloud_transformed;
 
-  convertROSMessageToPointCloud(msg, cloud);
-
-  bool box_found = false;
-  ros::Duration duration;
-  do
-  {
-    pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
-    pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
-
-    fitPlane(cloud, coefficients, inliers);
-
-    if (inliers->indices.size () < MIN_POINTS_PER_BOX)
-    {
-      break; // not enough points found
-    }
-
-    extractPlane(cloud, inliers, cloud_plane, cloud_rest);
-
-    downsampleCloud(cloud_plane, cloud_filtered);
-
-    transformCloud(cloud_filtered, cloud_transformed);
-
-    std::vector<pcl::PointIndices> cluster_indices;
-    clusterizeCloud(cloud_transformed, cluster_indices);
-
-    for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
-    {
-      pcl::PointCloud<pcl::PointXYZ> cloud_cluster;
-      for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); pit++)
-      {
-        cloud_cluster.points.push_back(cloud_transformed.points[*pit]);
-      }
-
-      box_found |= checkClusterForBox(cloud_cluster);
-      if (box_found)
-      {
-        break;  // one found box is enough
-      }
-    }
-
-    cloud = cloud_rest;
-    duration = ros::Time::now() - start_time;
-  } while (!box_found && duration.toSec() < DETECTION_TIMEOUT);
-
-  boost::mutex::scoped_lock lock(boxes_detected_mutex);
-  boxes_detected = true;
-  sub_pointcloud.shutdown();
-  boxes_detected_condition.notify_all();
-}
-
-bool detectBoxes(box_detection::DetectBoxes::Request & req,
-  box_detection::DetectBoxes::Response & res)
-{
-  try
-  {
-    tf_listener->waitForTransform("base_link", "camera_depth_optical_frame", ros::Time::now(), ros::Duration(10.0));
-    tf_listener->lookupTransform("base_link", "camera_depth_optical_frame", ros::Time::now(), tf_transform);
-  }
-  catch (tf::TransformException & ex)
-  {
-    ROS_ERROR_STREAM("TransformException: " << ex.what());
-  }
-
-  // Subscribe to pointcloud:
-  ros::NodeHandle nh;
-  {
-    boost::mutex::scoped_lock lock(boxes_detected_mutex);
-    sub_pointcloud = nh.subscribe("/camera/depth/points", 1, cloudCallback);
-    start_time = ros::Time::now();
-  }
-
-  // Wait for boxes to be detected:
-  {
-    boost::mutex::scoped_lock lock(boxes_detected_mutex);
-    while (!boxes_detected)
-      boxes_detected_condition.wait(lock);
-
-    res.box_id = box_id;
-    res.pose = box_pose;
-
-    boxes_detected = false; // Reset flag
-    box_id = "";
-    box_pose = geometry_msgs::Pose();
-  }
-  return true;
-}
 
 */
