@@ -91,6 +91,9 @@ private:
     KDL::Wrench    F_;            // Cart effort
     KDL::Jacobian  J_;            // Jacobian
 
+    ros::Time last_msg_;
+    ros::Duration dead_man_timeout_;
+
     void velCmdCB(const geometry_msgs::TwistConstPtr& msg);
 };
 

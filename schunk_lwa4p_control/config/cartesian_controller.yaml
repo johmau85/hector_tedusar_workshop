@@ -1,4 +1,4 @@
 cartesian_controller:
     type: velocity_controllers/CartesianController
     root_name: arm_0_link
-    tip_name: arm_6_link 
+    tip_name: arm_6_link
