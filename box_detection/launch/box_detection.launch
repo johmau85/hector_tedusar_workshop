@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+  <include file="$(find box_detection)/launch/utils.launch" />
+  <node name="box_detection" pkg="box_detection" type="box_detection" output="screen"/>
+</launch>
+

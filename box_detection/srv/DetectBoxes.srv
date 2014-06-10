@@ -1,0 +1,5 @@
+string SERVICE_NAME=detect_boxes
+---
+string box_id
+geometry_msgs/Pose pose
+
