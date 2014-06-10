@@ -56,6 +56,7 @@
 #include <kdl/chainfksolver.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 
+
 namespace velocity_controllers
 {
 
@@ -80,11 +81,10 @@ private:
     boost::scoped_ptr<KDL::ChainIkSolverVel> chain_ik_solver_vel_;
     boost::scoped_ptr<KDL::ChainFkSolverPos> chain_fk_solver_;
 
-    KDL::Twist  cmd_twist_;
+    KDL::Twist cmd_linear_twist_;
+    KDL::Twist cmd_angular_twist_;
 
     std::string root_name_, tip_name_;
-
-    bool tip_twist_;
 
     bool got_msg_;
 

@@ -7,7 +7,7 @@ button_gripper_release: 1
 axis_translation_x: 1
 axis_translation_y: 0
 axis_translation_z: 2
-axis_rotation_x: 3
-axis_rotation_y: 1
-axis_rotation_z: 0
+axis_rotation_x: 1
+axis_rotation_y: 0
+axis_rotation_z: 2
 

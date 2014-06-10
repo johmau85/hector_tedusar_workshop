@@ -107,12 +107,19 @@ namespace velocity_controllers
 
             if((time - last_msg_) >= dead_man_timeout_)
             {
-                cmd_twist_[0] = 0.0;
-                cmd_twist_[1] = 0.0;
-                cmd_twist_[2] = 0.0;
-                cmd_twist_[3] = 0.0;
-                cmd_twist_[4] = 0.0;
-                cmd_twist_[5] = 0.0;
+                cmd_linear_twist_[0] = 0.0;
+                cmd_linear_twist_[1] = 0.0;
+                cmd_linear_twist_[2] = 0.0;
+                cmd_linear_twist_[3] = 0.0;
+                cmd_linear_twist_[4] = 0.0;
+                cmd_linear_twist_[5] = 0.0;
+
+                cmd_angular_twist_[0] = 0.0;
+                cmd_angular_twist_[1] = 0.0;
+                cmd_angular_twist_[2] = 0.0;
+                cmd_angular_twist_[3] = 0.0;
+                cmd_angular_twist_[4] = 0.0;
+                cmd_angular_twist_[5] = 0.0;
 
                 got_msg_ = false;
 
@@ -131,32 +138,26 @@ namespace velocity_controllers
                 q(i) = joint_handles_[i].getPosition();
             }
 
-            KDL::Twist twist;
+            KDL::Frame frame_tip_pose;
 
-            if(tip_twist_)
+            if(chain_fk_solver_->JntToCart(q, frame_tip_pose) < 0)
             {
+                ROS_ERROR("Unable to compute forward kinematic.");
 
-                KDL::Frame frame_tip_pose;
-
-                if(chain_fk_solver_->JntToCart(q, frame_tip_pose) < 0)
+                for (unsigned int i = 0; i < kdl_chain_.getNrOfJoints(); i++)
                 {
-                    ROS_ERROR("Unable to compute forward kinematic.");
-
-                    for (unsigned int i = 0; i < kdl_chain_.getNrOfJoints(); i++)
-                    {
-                        joint_handles_[i].setCommand(0.0);
-                    }
-
-                    return;
+                    joint_handles_[i].setCommand(0.0);
                 }
 
+                return;
+            }
 
-                twist = frame_tip_pose.Inverse() * cmd_twist_;
-            }
-            else
-            {
-                twist = cmd_twist_;
-            }
+            KDL::Frame frame_tip_pose_inv = frame_tip_pose.Inverse();
+
+            KDL::Twist linear_twist = frame_tip_pose_inv * cmd_linear_twist_;
+            KDL::Twist angular_twist = frame_tip_pose_inv.M * cmd_angular_twist_;
+
+            KDL::Twist twist(linear_twist.vel, angular_twist.rot);
 
             KDL::JntArray joint_vel(joint_handles_.size());
             if(chain_ik_solver_vel_->CartToJnt(q, twist, joint_vel) < 0)
@@ -208,15 +209,21 @@ namespace velocity_controllers
 
     void CartesianController::starting(const ros::Time& time)
     {
-        cmd_twist_[0] = 0.0;
-        cmd_twist_[1] = 0.0;
-        cmd_twist_[2] = 0.0;
-        cmd_twist_[3] = 0.0;
-        cmd_twist_[4] = 0.0;
-        cmd_twist_[5] = 0.0;
+        cmd_linear_twist_[0] = 0.0;
+        cmd_linear_twist_[1] = 0.0;
+        cmd_linear_twist_[2] = 0.0;
+        cmd_linear_twist_[3] = 0.0;
+        cmd_linear_twist_[4] = 0.0;
+        cmd_linear_twist_[5] = 0.0;
+
+        cmd_angular_twist_[0] = 0.0;
+        cmd_angular_twist_[1] = 0.0;
+        cmd_angular_twist_[2] = 0.0;
+        cmd_angular_twist_[3] = 0.0;
+        cmd_angular_twist_[4] = 0.0;
+        cmd_angular_twist_[5] = 0.0;
 
         last_msg_ = ros::Time::now();
-        tip_twist_ = false;
         got_msg_ = false;
     }
 
@@ -227,25 +234,22 @@ namespace velocity_controllers
 
     void CartesianController::velCmdCB(const geometry_msgs::TwistStampedConstPtr& msg)
     {
-        cmd_twist_[0] = msg->twist.linear.x;
-        cmd_twist_[1] = msg->twist.linear.y;
-        cmd_twist_[2] = msg->twist.linear.z;
-        cmd_twist_[3] = msg->twist.angular.x;
-        cmd_twist_[4] = msg->twist.angular.y;
-        cmd_twist_[5] = msg->twist.angular.z;
+        cmd_linear_twist_.vel(0) = msg->twist.linear.x;
+        cmd_linear_twist_.vel(1) = msg->twist.linear.y;
+        cmd_linear_twist_.vel(2) = msg->twist.linear.z;
+        cmd_linear_twist_.rot(0) = 0.0;
+        cmd_linear_twist_.rot(1) = 0.0;
+        cmd_linear_twist_.rot(2) = 0.0;
+
+        cmd_angular_twist_.vel(0) = 0.0;
+        cmd_angular_twist_.vel(1) = 0.0;
+        cmd_angular_twist_.vel(2) = 0.0;
+        cmd_angular_twist_.rot(0) = msg->twist.angular.x;
+        cmd_angular_twist_.rot(1) = msg->twist.angular.y;
+        cmd_angular_twist_.rot(2) = msg->twist.angular.z;
 
         last_msg_ = ros::Time::now();
         got_msg_ = true;
-
-        if(msg->header.frame_id == tip_name_)
-        {
-            tip_twist_ = true;
-        }
-        else
-        {
-            tip_twist_ = false;
-        }
-
 
     }
 
