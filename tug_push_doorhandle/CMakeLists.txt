@@ -1,26 +1,27 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(tug_push_doorhandle)
+project(tug_push_door_handle)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  action_lib
   baxter_control
   baxter_core_msgs
   geometry_msgs
-  moveit
   moveit_core
   moveit_ros_planning
   moveit_ros_planning_interface
   moveit_visual_tools
   roscpp
-  simple_grasps
+  moveit_simple_grasps
+  tug_grasp_object_msgs
+  eigen_conversions
+  actionlib
 )
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
-
+find_package(Eigen REQUIRED)
+find_package(Boost REQUIRED thread system)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -100,27 +101,31 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-# include_directories(include)
+include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
-# add_library(tug_push_doorhandle
-#   src/${PROJECT_NAME}/tug_push_doorhandle.cpp
-# )
+add_library(push_door_handle
+  include/${PROJECT_NAME}/push_door_handle/push_door_handle.h
+  include/${PROJECT_NAME}/push_door_handle_node.h
+  src/push_door_handle/push_door_handle.cpp
+ )
 
 ## Declare a cpp executable
-# add_executable(tug_push_doorhandle_node src/tug_push_doorhandle_node.cpp)
+add_executable(push_door_handle_node src/push_door_handle_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(tug_push_doorhandle_node tug_push_doorhandle_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(tug_push_doorhandle_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(push_door_handle_node
+    push_door_handle
+   ${catkin_LIBRARIES}
+   ${Boost_LIBRARIES}
+ )
 
 #############
 ## Install ##

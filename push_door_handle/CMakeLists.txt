@@ -1,14 +1,17 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(tug_grasp_object_msgs)
+project(push_door_handle)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-    actionlib
-  actionlib_msgs
+  roscpp
   geometry_msgs
-  message_generation
+  moveit_core
+  moveit_ros_planning
+  moveit_ros_planning_interface
+  actionlib_msgs
+  actionlib
 )
 
 ## System dependencies are found with CMake's conventions
@@ -45,11 +48,11 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
- add_message_files(
-   FILES
-   GraspObject.msg
+# add_message_files(
+#   FILES
+#   Message1.msg
 #   Message2.msg
- )
+# )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -59,19 +62,20 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate actions in the 'action' folder
- add_action_files(
-   DIRECTORY action
-   FILES
-     GraspObject.action
-     PushDoorHandle.action
- )
+# add_action_files(
+#   FILES
+#   Action1.action
+#   Action2.action
+# )
 
 ## Generate added messages and services with any dependencies listed here
- generate_messages(
-   DEPENDENCIES
-  geometry_msgs
-  actionlib_msgs
- )
+# generate_messages(
+#   DEPENDENCIES
+#   std_msgs  # Or other packages containing msgs
+# )
+#generate_messages(
+#  DEPENDENCIES actionlib_msgs std_msgs  # Or other packages containing msgs
+#)
 
 ###################################
 ## catkin specific configuration ##
@@ -84,8 +88,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES tug_grasp_object_msgs
-  CATKIN_DEPENDS geometry_msgs message_runtime actionlib_msgs
+#  LIBRARIES push_door_handle
+#  CATKIN_DEPENDS roscpp
 #  DEPENDS system_lib
 )
 
@@ -95,27 +99,27 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-# include_directories(include)
+include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
-# add_library(tug_grasp_object_msgs
-#   src/${PROJECT_NAME}/tug_grasp_object_msgs.cpp
+# add_library(push_door_handle
+#   src/${PROJECT_NAME}/push_door_handle.cpp
 # )
 
 ## Declare a cpp executable
-# add_executable(tug_grasp_object_msgs_node src/tug_grasp_object_msgs_node.cpp)
+add_executable(push_handle src/push_handle.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(tug_grasp_object_msgs_node tug_grasp_object_msgs_generate_messages_cpp)
+# add_dependencies(push_door_handle_node push_door_handle_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(tug_grasp_object_msgs_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(push_handle
+${catkin_LIBRARIES}
+ )
 
 #############
 ## Install ##
@@ -132,7 +136,7 @@ include_directories(
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS tug_grasp_object_msgs tug_grasp_object_msgs_node
+# install(TARGETS push_door_handle push_door_handle_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -157,7 +161,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_tug_grasp_object_msgs.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_push_door_handle.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
