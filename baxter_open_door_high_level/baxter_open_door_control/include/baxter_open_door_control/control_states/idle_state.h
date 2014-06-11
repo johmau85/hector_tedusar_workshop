@@ -31,6 +31,10 @@ public:
 
     virtual void timedExecution();
 
+private:
+    bool promptUser(std::string string);
+    bool asked_user_;
+
 
 };
 

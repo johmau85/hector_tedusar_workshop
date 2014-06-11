@@ -40,7 +40,7 @@ void BaxterOpenDoorControl::init()
 
 
     // robot control services
-    //set_baxter_operation_mode_srv_ = nh_.advertiseService("set_robot_operation_mode", &RobotControl::setRobotOperationModeCB, this);
+    set_baxter_operation_mode_srv_ = nh_.advertiseService("set_robot_operation_mode", &BaxterOpenDoorControl::setOperationModeCB, this);
 
 
 
@@ -54,13 +54,43 @@ void BaxterOpenDoorControl::init()
     private_nh.param<double>("timed_function_hz", timed_function_hz, 1.0);
     timed_function_ = nh_.createTimer(ros::Duration(1.0/timed_function_hz), &BaxterOpenDoorControl::timedCB, this);
 
+    //doorhandle in scene
+    object_to_grasp_.object_name = "door_handle";
+    object_to_grasp_.object_type = "door_handle";
+
+    geometry_msgs::Pose handle_pose;
+    handle_pose.orientation.w = -0.233035946881;
+    handle_pose.orientation.x = 0.663621432006;
+    handle_pose.orientation.y = 0.326102320682 ;
+    handle_pose.orientation.z = 0.631631315633;
+    handle_pose.position.x = 0.99;
+    handle_pose.position.y = -0.36;
+    handle_pose.position.z = 0.15;
+    object_to_grasp_.object_pose.pose = handle_pose;
+    object_to_grasp_.object_pose.header.frame_id = "/base";
+    object_to_grasp_.object_pose.header.stamp = ros::Time::now();
+
+
+    //    door mounting point
+    door_mounting_pose_.pose.position.x = 0.65892137268;
+    door_mounting_pose_.pose.position.y = -1.06749630216;
+    door_mounting_pose_.pose.position.z = 0.312122309527;
+    door_mounting_pose_.pose.orientation.w = 1.0;
+    door_mounting_pose_.header.frame_id = "base";
+    door_mounting_pose_.header.stamp = ros::Time::now();
+
+    door_radius_ = 0.7;
+    door_opening_direction_ = "push";
+
+
+
     setState(idle_state_);
 
 }
 
 //******************************************************************************
 
-void BaxterOpenDoorControl::setState(BaxterOpenDoorControlStatePtr state)
+bool BaxterOpenDoorControl::setState(BaxterOpenDoorControlStatePtr state)
 {
     current_state_ = state;
 }
@@ -133,42 +163,34 @@ OpenDoorActionClientPtr BaxterOpenDoorControl::getOpenDoorActionClient()
 
 //******************************************************************************
 
-//bool RobotControl::setRobotOperationModeCB(SetRobotOperationMode::Request &request, SetRobotOperationMode::Response &response)
-//{
-//    bool result = false;
+bool BaxterOpenDoorControl::setOperationModeCB(baxter_open_door_control_msgs::SetOperationMode::Request &request, baxter_open_door_control_msgs::SetOperationMode::Response &response)
+{
+    bool result = false;
 
-//    switch(request.operation_mode)
-//    {
-//    case SetRobotOperationMode::Request::AUTONOMOUS_MODE:
-//        result = current_state_->setExploreAndSearchMode();
-//        break;
-//    case SetRobotOperationMode::Request::TELEOP_MODE:
-//        result = current_state_->setTeleopMode();
-//        break;
-//    case SetRobotOperationMode::Request::LOOK_AROUND_MODE:
-//        result = current_state_->setLookAroundMode();
-//        break;
-//    case SetRobotOperationMode::Request::EXPLORATION_MODE:
-//        result = current_state_->setExplorationMode();
-//        break;
-//    case SetRobotOperationMode::Request::DETECTOR_CHECK_MODE:
-//        result = current_state_->setDetectorCheckMode();
-//        break;
-//    case SetRobotOperationMode::Request::GO_TO_OBSERVE_POSE_MODE:
-//        result = current_state_->setGoToObservePoseMode();
-//        break;
-//    case SetRobotOperationMode::Request::OBSERVE_MODE:
-//        result = current_state_->setObserveMode();
-//        break;
-//    case SetRobotOperationMode::Request::VERIFY_VICTIM_MODE:
-//        result = current_state_->setVerifyVictimMode();
-//        break;
-//    default:
-//        ROS_WARN("Unknown operation mode.");
-//    }
+    switch(request.operation_mode)
+    {
+    case baxter_open_door_control_msgs::SetOperationMode::Request::DETECT_MODE:
+        result = current_state_->setDetectMode();
+        break;
+    case baxter_open_door_control_msgs::SetOperationMode::Request::GRASP_HANDLE_MODE:
+        result = current_state_->setGraspHandleMode();
+        break;
+    case baxter_open_door_control_msgs::SetOperationMode::Request::IDLE_MODE:
+        result = current_state_->setIdleMode();
+        break;
+    case baxter_open_door_control_msgs::SetOperationMode::Request::OPEN_DOOR_MODE:
+        result = current_state_->setOpenDoorMode();
+        break;
+    case baxter_open_door_control_msgs::SetOperationMode::Request::PUSH_HANDLE_MODE:
+        result = current_state_->setPushHandleMode();
+        break;
+    default:
+        ROS_WARN("Unknown operation mode.");
+    }
 
-//    return result;
-//}
+    return result;
+
+}
 
 //******************************************************************************
 

@@ -40,7 +40,8 @@ private:
     ros::Publisher baxter_open_door_state_pub_;
 
     // robot control services
-//    ros::ServiceServer set_baxter_operation_mode_srv_;
+    bool setOperationModeCB(baxter_open_door_control_msgs::SetOperationMode::Request &request, baxter_open_door_control_msgs::SetOperationMode::Response &response);
+    ros::ServiceServer set_baxter_operation_mode_srv_;
 
 
     // robot current state
@@ -63,6 +64,17 @@ private:
     ros::Timer timed_function_;
 
 
+    //handle of interest
+    tug_grasp_object_msgs::GraspObject object_to_grasp_;
+
+    //point of door mounte
+    geometry_msgs::PoseStamped door_mounting_pose_;
+    double door_radius_;
+    std::string door_opening_direction_; //"pull" or "push"
+
+
+
+
 public:
     BaxterOpenDoorControl();
 
@@ -71,7 +83,7 @@ public:
     void init();
 
     // set robot state methode
-    void setState(BaxterOpenDoorControlStatePtr state);
+    bool setState(BaxterOpenDoorControlStatePtr state);
 
     // set feedback for operator
     void setFeedback(std::string state_name, std::string message);
@@ -92,6 +104,25 @@ public:
 
     ros::NodeHandle getNodeHandle()
     {return nh_;}
+
+    ros::Duration getWaitForServerDuration()
+    {
+        return ros::Duration(5.0);
+    }
+
+   tug_grasp_object_msgs::GraspObject getObjectToGrasp()
+   { return object_to_grasp_;}
+
+   geometry_msgs::PoseStamped getDoorMountingPose()
+   {return door_mounting_pose_;}
+
+   std::string getDoorOpeningDirection()
+   {return door_opening_direction_;}
+
+   double getDoorRadius()
+   {return door_radius_;}
+
+
 
 private:
 

@@ -14,15 +14,15 @@ IdleState::IdleState(BaxterOpenDoorControl* baxter_open_door_control) :
 
 IdleState::~IdleState()
 {
-
+    asked_user_ = true;
 }
 
 //******************************************************************************
 
 bool IdleState::setDetectMode()
 {
-    ROS_ERROR_STREAM("Set detect mode not implemented yet in " << getStateName());
-    return false;
+    ROS_ERROR_STREAM("Set detect mode from " << getStateName());
+    return baxter_open_door_control_->setState(baxter_open_door_control_->getDetectState());
 }
 
 //******************************************************************************
@@ -62,6 +62,27 @@ bool IdleState::setPushHandleMode()
 void IdleState::timedExecution()
 {
     baxter_open_door_control_->setFeedback(getStateName(), std::string("idle mode"));
+    if(promptUser("Start?"))
+    {
+        setDetectMode();
+    }
+
+}
+
+//******************************************************************************
+
+bool IdleState::promptUser(std::string string)
+{
+
+    ROS_INFO_STREAM_NAMED("IDLE", string.c_str() << " (y/n)");
+    char input;
+    std::cin >> input;
+    if( input == 'n' )
+        return false;
+    else if (input == 'y')
+        return true;
+
+
 }
 
 }
