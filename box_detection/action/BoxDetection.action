@@ -1,8 +1,9 @@
 # Goal:
 ---
 # Result:
-geometry_msgs/Pose[] box_poses
+string[] box_names
+geometry_msgs/PoseStamped[] box_poses
 ---
 # Feedback:
-geometry_msgs/Pose box_pose
-
+string box_name
+geometry_msgs/PoseStamped box_pose
