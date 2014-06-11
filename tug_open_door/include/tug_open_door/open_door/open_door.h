@@ -1,5 +1,6 @@
-#ifndef PUSH_DOOR_HANDLE_
-#define PUSH_DOOR_HANDLE_
+#ifndef OPEN_DOOR_
+#define OPEN_DOOR_
+
 
 #include <ros/ros.h>
 
@@ -11,6 +12,8 @@
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit/macros/deprecation.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
+#include <moveit/trajectory_processing/trajectory_tools.h>
+#include <moveit/trajectory_processing/iterative_time_parameterization.h>
 
 #include <Eigen/Core>
 
@@ -20,8 +23,7 @@
 #include <moveit_visual_tools/visual_tools.h>
 #include <moveit/move_group_interface/move_group.h>
 #include <baxter_core_msgs/EndpointState.h>
-#include <moveit/trajectory_processing/trajectory_tools.h>
-#include <moveit/trajectory_processing/iterative_time_parameterization.h>
+
 #include <boost/shared_ptr.hpp>
 
 #include <math.h>
@@ -30,27 +32,24 @@
 
 #include <boost/make_shared.hpp>
 
-namespace push_door_handle
+namespace open_door
 {
-class PushDoorHandle
+class OpenDoor
 {
 public:
-    PushDoorHandle();
-    virtual ~PushDoorHandle();
-
+    OpenDoor();
+    virtual ~OpenDoor();
     ros::Publisher display_publisher_;
-//    ros::Publisher desired_pose_pub_;
-//    ros::Subscriber current_right_hand_pose_;
-    bool pushHandle();
-//    void stateCallback(const baxter_core_msgs::EndpointStateConstPtr &msg);
+    ros::Publisher display_way_points_;
+    ros::Publisher display_mid_point_;
+
+    bool openDoor(geometry_msgs::PoseStamped midpoint, float radius, std::string direction);
 private:
     boost::shared_ptr<move_group_interface::MoveGroup> move_group_;
-//    geometry_msgs::PoseStamped current_pose_;
-    geometry_msgs::PoseStamped desired_pose_;
-
-
 };
 
+
 }
+
 
 #endif

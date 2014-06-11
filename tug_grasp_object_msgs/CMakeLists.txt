@@ -64,6 +64,7 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
      GraspObject.action
      PushDoorHandle.action
+     OpenDoor.action
  )
 
 ## Generate added messages and services with any dependencies listed here

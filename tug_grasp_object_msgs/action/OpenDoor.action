@@ -1,0 +1,16 @@
+# Define the goal
+geometry_msgs/PoseStamped midpoint_opening_circle
+float32 radius
+#opening direction = 'pull' or 'push'
+string opening_direction
+---
+# Define the result
+uint8 ERROR_OCCURED=0
+uint8 EXECUTION_PREEMPTED=1
+uint8 PUSH_FAILED=2
+uint8 PUSH_SUCCESS=3
+
+uint8 result
+---
+# Define a feedback message
+uint8 feedback

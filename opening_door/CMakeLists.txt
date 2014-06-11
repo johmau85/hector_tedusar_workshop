@@ -1,27 +1,27 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(tug_push_door_handle)
+project(opening_door)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  baxter_control
-  baxter_core_msgs
-  geometry_msgs
-  moveit_core
-  moveit_ros_planning
+ roscpp
+  std_msgs
+  actionlib 
+  visualization_msgs 
+  eigen_conversions 
+  moveit_ros_planning 
   moveit_ros_planning_interface
-  moveit_visual_tools
-  roscpp
+  tf
+  tf_conversions
   moveit_simple_grasps
-  tug_grasp_object_msgs
-  eigen_conversions
-  actionlib
+  cmake_modules
+
 )
 
 ## System dependencies are found with CMake's conventions
-find_package(Eigen REQUIRED)
-find_package(Boost REQUIRED thread system)
+# find_package(Boost REQUIRED COMPONENTS system)
+
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -76,7 +76,7 @@ find_package(Boost REQUIRED thread system)
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   baxter_core_msgs#   geometry_msgs
+#   std_msgs  # Or other packages containing msgs
 # )
 
 ###################################
@@ -89,10 +89,18 @@ find_package(Boost REQUIRED thread system)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
+  CATKIN_DEPENDS
+    roscpp
+    std_msgs
+    actionlib 
+    visualization_msgs 
+    eigen_conversions 
+    moveit_ros_planning 
+    moveit_ros_planning_interface
+    tf
+    tf_conversions
+    moveit_simple_grasps
 #  INCLUDE_DIRS include
-#  LIBRARIES tug_push_doorhandle
-#  CATKIN_DEPENDS action_lib baxter_control baxter_core_msgs geometry_msgs moveit moveit_core moveit_ros_planning moveit_ros_planning_interface moveit_visual_tools roscpp simple_grasps
-#  DEPENDS system_lib
 )
 
 ###########
@@ -105,26 +113,22 @@ include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
-
+link_directories(${catkin_LIBRARY_DIRS})
 ## Declare a cpp library
-add_library(push_door_handle
-  include/${PROJECT_NAME}/push_door_handle/push_door_handle.h
-  include/${PROJECT_NAME}/push_door_handle_node.h
-  src/push_door_handle/push_door_handle.cpp
- )
+# add_library(opening_door
+#   src/${PROJECT_NAME}/opening_door.cpp
+# )
 
 ## Declare a cpp executable
-add_executable(push_door_handle_node src/push_door_handle_node.cpp)
+add_executable(opening_door_node src/opening_door.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(tug_push_doorhandle_node tug_push_doorhandle_generate_messages_cpp)
-target_link_libraries(push_door_handle ${catkin_LIBRARIES})
+# add_dependencies(opening_door_node opening_door_generate_messages_cpp)
+
 ## Specify libraries to link a library or executable target against
-target_link_libraries(push_door_handle_node
-    push_door_handle
+ target_link_libraries(opening_door_node
    ${catkin_LIBRARIES}
-   ${Boost_LIBRARIES}
  )
 
 #############
@@ -142,7 +146,7 @@ target_link_libraries(push_door_handle_node
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS tug_push_doorhandle tug_push_doorhandle_node
+# install(TARGETS opening_door opening_door_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -167,7 +171,7 @@ target_link_libraries(push_door_handle_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_tug_push_doorhandle.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_opening_door.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

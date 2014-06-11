@@ -1,0 +1,25 @@
+<launch>
+
+  <arg name="debug" default="false" />
+  <arg unless="$(arg debug)" name="launch_prefix" value="" />
+  <arg     if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
+
+    
+
+    <node name="tug_open_door_node" pkg="tug_open_door" type="open_door_node" >
+    <rosparam command="load" file="$(find baxter_moveit_config)/config/kinematics.yaml"/>
+   <remap from="/joint_states" to="/robot/joint_states" />
+</node>
+
+  <!-- Launch grasp handle -->
+  <node name="opening_door"  pkg="opening_door" 
+	type="opening_door_node" output="screen">
+   <rosparam command="load" file="$(find baxter_moveit_config)/config/kinematics.yaml"/>
+   <remap from="/joint_states" to="/robot/joint_states" />
+  </node>
+
+ 
+
+
+
+</launch>

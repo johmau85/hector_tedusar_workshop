@@ -31,7 +31,7 @@ bool PushDoorHandle::pushHandle()
     geometry_msgs::PoseStamped prev_pose = move_group_->getCurrentPose("right_wrist");
 
     desired_pose_ = move_group_->getCurrentPose("right_wrist");
-    desired_pose_.pose.position.z = desired_pose_.pose.position.z - 0.1;
+    desired_pose_.pose.position.z = desired_pose_.pose.position.z - 0.08;
 //    desired_pose_pub_.publish(desired_pose_);
     move_group_->setPoseTarget(desired_pose_);
 
