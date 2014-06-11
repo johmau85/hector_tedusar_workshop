@@ -1,4 +1,5 @@
 #include <box_detection/box_detection_node.h>
+#include <iostream>
 #include <sstream>
 #include <boost/bind.hpp>
 #include <pcl/common/common.h>
@@ -10,35 +11,15 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/surface/convex_hull.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <moveit_msgs/PlanningScene.h>
 #include <moveit_msgs/CollisionObject.h>
 
-/*#include <iostream>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/condition.hpp>
-#include <tf/transform_listener.h>
 
-#include <ros/ros.h>
-#include <ros/spinner.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <geometry_msgs/Pose.h>
-
-
-#include <pcl/ModelCoefficients.h>
-#include <pcl/filters/extract_indices.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
-#include <pcl/sample_consensus/method_types.h>
-#include <pcl/sample_consensus/model_types.h>
-#include <pcl/conversions.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <box_detection/DetectBoxes.h>*/
 
 static const double BOX_AREA = 0.09 * 0.3;
-static const double BOX_AREA_FACTOR = 0.8;
+static const double BOX_AREA_FACTOR = 0.5; //0.8;
 static const ros::Duration DETECTION_TIMEOUT(15.0);
 static const int MIN_POINTS_PER_BOX = 100;
+
 
 
 namespace box_detection
@@ -47,10 +28,12 @@ namespace box_detection
 BoxDetectionNode::BoxDetectionNode()
     : box_detection_as_(nh_, "detect_boxes", false), box_counter_(0)
 {
-    pcl::console::setVerbosityLevel(pcl::console::L_VERBOSE);
+    pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
-    plane_cloud_publisher_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud_plane", 1);
     planning_scene_publisher_ = nh_.advertise<moveit_msgs::PlanningScene>("planning_scene", 1);
+
+    plane_cloud_publisher_ = nh_.advertise<sensor_msgs::PointCloud>("plane_cloud", 1);
+    publisher_timer_ = nh_.createTimer(ros::Rate(2.0), &BoxDetectionNode::publisherTimerCallback, this);
 
     box_detection_as_.registerGoalCallback(boost::bind(&BoxDetectionNode::boxDetectionActionGoalCallback, this));
     box_detection_as_.registerPreemptCallback(boost::bind(&BoxDetectionNode::boxDetectionActionPreemptCallback, this));
@@ -59,6 +42,7 @@ BoxDetectionNode::BoxDetectionNode()
 
 void BoxDetectionNode::boxDetectionActionGoalCallback()
 {
+    ROS_INFO("BoxDetection action started");
     box_detection_as_.acceptNewGoal();
 
     try
@@ -74,18 +58,29 @@ void BoxDetectionNode::boxDetectionActionGoalCallback()
 
     // Subscribe to pointcloud:
     point_cloud_subscriber_ = nh_.subscribe("/camera/depth/points", 1, &BoxDetectionNode::pointCloudCallback, this);
+
     start_time_ = ros::Time::now();
+
+    plane_cloud_ = sensor_msgs::PointCloud();
+    plane_cloud_.channels.resize(1);
+    plane_cloud_.channels.at(0).name = "intensity";
+
+    planning_scene_ = moveit_msgs::PlanningScene();
+
     boxes_.clear();
 }
 
 void BoxDetectionNode::boxDetectionActionPreemptCallback()
 {
     box_detection_as_.setPreempted();
+    ROS_INFO("BoxDetection action preempted");
 }
 
 void BoxDetectionNode::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr & msg)
 {
     point_cloud_subscriber_.shutdown();
+
+    plane_cloud_.header.frame_id = msg->header.frame_id;
 
     PclPointCloud::Ptr cloud = boost::make_shared<PclPointCloud>();
     PclPointCloud::Ptr plane_cloud = boost::make_shared<PclPointCloud>();
@@ -96,6 +91,7 @@ void BoxDetectionNode::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr
     pcl::fromROSMsg(*msg, *cloud);
 
     bool box_found = false;
+    float plane_intensity = 0;
     do
     {
         pcl::PointIndices::Ptr inliers = boost::make_shared<pcl::PointIndices>();
@@ -104,24 +100,44 @@ void BoxDetectionNode::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr
         if (inliers->indices.size() < MIN_POINTS_PER_BOX)
             break; // not enough points found
 
+        ROS_INFO("Found plane with %d points", inliers->indices.size());
+
         extractPlane(cloud, inliers, *plane_cloud, *remaining_cloud);
 
         downsampleCloud(plane_cloud, *downsampled_plane_cloud);
+
+        ROS_INFO("Downsampled it to %d points", downsampled_plane_cloud->size());
 
         transformCloud(msg->header.frame_id, "base_link", downsampled_plane_cloud, *transformed_plane_cloud);
 
         std::vector<pcl::PointIndices> cluster_indices;
         clusterizeCloud(transformed_plane_cloud, cluster_indices);
 
+
+
+        ROS_INFO("Clustered into %d clusters", cluster_indices.size());
+
         pcl::ExtractIndices<PclPoint> extractor;
         pcl::PointIndices::Ptr point_indices = boost::make_shared<pcl::PointIndices>();
         extractor.setInputCloud(transformed_plane_cloud);
-        extractor.setIndices(point_indices);
         for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
         {
             *point_indices = *it;
+            extractor.setIndices(point_indices); // Must be done after assigning new indices to point_indices!
             PclPointCloud::Ptr cloud_cluster = boost::make_shared<PclPointCloud>();
             extractor.filter(*cloud_cluster);
+            ROS_INFO("Checking cluster with %d points", cloud_cluster->size());
+
+            plane_intensity += 1.0f;
+            for (PclPointCloud::iterator p_it = cloud_cluster->begin(); p_it != cloud_cluster->end(); ++p_it)
+            {
+                geometry_msgs::Point32 point;
+                point.x = p_it->x;
+                point.y = p_it->y;
+                point.z = p_it->z;
+                plane_cloud_.points.push_back(point);
+                plane_cloud_.channels.at(0).values.push_back(plane_intensity);
+            }
 
             if (checkClusterForBox(cloud_cluster))
             {
@@ -130,7 +146,7 @@ void BoxDetectionNode::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr
                 publishCollisionObject(box);
                 publishActionFeedback(box);
 
-                ROS_INFO_STREAM("FOUND BOX! Name: " << box.name_ << "; Area: " << computeArea(cloud_cluster)  << "; Pose: " << box.pose_);
+                ROS_INFO_STREAM("FOUND BOX! Name: " << box.name_ << "; Area: " << computeArea(cloud_cluster)  << "; Pose: " << box.pose_.pose);
                 box_found = true;
             }
 
@@ -151,6 +167,14 @@ void BoxDetectionNode::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr
         }
         box_detection_as_.setSucceeded(result);
     }
+    ROS_INFO("BoxDetection action finished; found %d boxes", boxes_.size());
+}
+
+
+void BoxDetectionNode::publisherTimerCallback(const ros::TimerEvent &)
+{
+    plane_cloud_publisher_.publish(plane_cloud_);
+    planning_scene_publisher_.publish(planning_scene_);
 }
 
 
@@ -260,6 +284,10 @@ const BoxDetectionNode::Box & BoxDetectionNode::createBox(const PclPointCloud::C
     pcl::PCA<PclPoint> pca;
     pca.setInputCloud(cloud);
     Eigen::Matrix3f eigen_vectors = pca.getEigenVectors();
+
+    Eigen::Vector3f eigen_values = pca.getEigenValues();
+    ROS_INFO("Creating box with eigen_values [%f, %f, %f]", eigen_values(0), eigen_values(1), eigen_values(2));
+
     Eigen::Vector3f major_vector = eigen_vectors.col(0);
     major_vector.z() = 0;
 
@@ -289,10 +317,10 @@ const BoxDetectionNode::Box & BoxDetectionNode::createBox(const PclPointCloud::C
 
 void BoxDetectionNode::publishBoxCloud(const Box & box, const PclPointCloud::ConstPtr & cloud)
 {
-    sensor_msgs::PointCloud2 plane_cloud_msg;
-    pcl::toROSMsg(*cloud, plane_cloud_msg);
-    plane_cloud_msg.header = box.pose_.header;
-    plane_cloud_publisher_.publish(plane_cloud_msg);
+//    sensor_msgs::PointCloud2 plane_cloud_msg;
+//    pcl::toROSMsg(*cloud, plane_cloud_msg);
+//    plane_cloud_msg.header = box.pose_.header;
+//    plane_cloud_publisher_.publish(plane_cloud_msg);
 }
 
 void BoxDetectionNode::publishCollisionObject(const Box & box)
@@ -312,14 +340,10 @@ void BoxDetectionNode::publishCollisionObject(const Box & box)
     object.primitives.push_back(primitive);
     object.primitive_poses.push_back(box.pose_.pose);
 
-    moveit_msgs::PlanningScene planning_scene;
-    planning_scene.world.collision_objects.push_back(object);
-    planning_scene.is_diff = true;
-    planning_scene_publisher_.publish(planning_scene);
+    planning_scene_.world.collision_objects.push_back(object);
 }
 
-void BoxDetectionNode::publishActionFeedback(const Box & box)
-{
+void BoxDetectionNode::publishActionFeedback(const Box & box){
     BoxDetectionFeedback feedback;
     feedback.box_name = box.name_;
     feedback.box_pose = box.pose_;
@@ -354,22 +378,9 @@ int main(int argc, char** argv)
     }
     catch (std::exception & ex)
     {
-        ROS_FATAL("Unhandled exception: %s", ex.what());
+        std::cerr << "Unhandled exception: " << ex.what() << std::endl;
         return 1;
     }
-
-    //pub_planning_scene_diff = nh.advertise<moveit_msgs::PlanningScene>("planning_scene", 1);
-    // while(planning_scene_diff_publisher.getNumSubscribers() < 1)
-    // {
-    //   ros::WallDuration sleep_t(0.5);
-    //   sleep_t.sleep();
-    // }
-
-    // Create DetectBoxes service:
-    //detect_boxes_service = pnh.advertiseService(
-    //            box_detection::DetectBoxes::Request::SERVICE_NAME, detectBoxes);
-
-    //spinner.spin();
 }
 
 
