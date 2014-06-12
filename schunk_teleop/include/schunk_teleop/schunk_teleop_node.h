@@ -11,6 +11,7 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <control_msgs/GripperCommandAction.h>
 #include <actionlib/client/simple_action_client.h>
+#include <std_msgs/Empty.h>
 
 
 namespace schunk_teleop
@@ -45,6 +46,7 @@ private:
         int button_turbo_id_;
         int button_gripper_grasp_id_;
         int button_gripper_release_id_;
+        int button_grasp_done_id_;
 
         int axis_translation_x_id_;
         int axis_translation_y_id_;
@@ -65,6 +67,8 @@ private:
     void sendCmdVel();
     void sendGripperCommand(double position, double max_effort);
 
+    void sendGraspDone();
+
     template <typename T> static void getRequiredParameter(ros::NodeHandle & private_nh, const std::string & key, T & value);
     template <typename T> static void getOptionalParameter(ros::NodeHandle & private_nh, const std::string & key, T & value, T default_value);
 
@@ -78,6 +82,8 @@ private:
     ros::Timer cmd_generator_timer_;
     ros::Publisher cmd_vel_pub_;
     boost::scoped_ptr<GripperCommandActionClient> gripper_command_ac_;
+
+    ros::Publisher grasping_done_pub_;
 
     geometry_msgs::TwistStamped cmd_vel_;
 };
