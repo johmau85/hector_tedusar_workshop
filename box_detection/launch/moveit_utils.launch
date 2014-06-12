@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- send lwa4p urdf to param server -->
+    <param name="robot_description" command="$(find xacro)/xacro.py '$(find schunk_lwa4p_control)/urdf/lwa4p.urdf.xacro'" />
+        
+    <!-- robot state publisher -->
+    <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher"/>
+        
+</launch>
+
