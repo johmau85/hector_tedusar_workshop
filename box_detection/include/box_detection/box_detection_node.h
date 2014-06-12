@@ -52,8 +52,6 @@ private:
                       PclPointCloud & cloud_plane,
                       PclPointCloud & cloud_rest);
     void downsampleCloud(const PclPointCloud::ConstPtr & cloud, PclPointCloud & cloud_filtered);
-    void transformCloud(const std::string & source_frame_id, const std::string & target_frame_id,
-                        const PclPointCloud::ConstPtr & cloud, PclPointCloud & cloud_transformed);
     void clusterizeCloud(const PclPointCloud::ConstPtr & cloud, std::vector<pcl::PointIndices> & cluster_indices);
     bool checkClusterForBox(const PclPointCloud::ConstPtr & cloud);
     const Box & createBox(const PclPointCloud::ConstPtr & cloud);
