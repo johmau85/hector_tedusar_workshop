@@ -24,7 +24,7 @@
     <visual>
       <origin xyz="0 0 0.25" rpy="0 0 0" />
       <geometry>
-         <cylinder radius="0.1" length="0.5"/>
+         <cylinder radius="0.3" length="0.5"/>
       </geometry>
       <material name="Schunk/DarkGrey" />
     </visual>
@@ -32,7 +32,7 @@
     <collision>
       <origin xyz="0 0 0.25" rpy="0 0 0" />
       <geometry>
-        <cylinder radius="0.1" length="0.5"/>
+        <cylinder radius="0.3" length="0.5"/>
       </geometry>
     </collision>
   </link>
@@ -47,5 +47,11 @@
   <xacro:wsg_50_xacro name="gripper" parent="arm_6_link">
     <origin xyz="0 0 0.085" rpy="0 0 1.570796" />
   </xacro:wsg_50_xacro>
+  
+  <xacro:include filename="$(find hector_sensors_description)/urdf/asus_camera.urdf.xacro" />
+  
+  <xacro:asus_camera_model name="asus" parent="gripper_base_link">
+    <origin xyz="-0.02 0.055 0.035" rpy="0 -1.570796 -1.570796" />
+  </xacro:asus_camera_model>
 
 </robot>

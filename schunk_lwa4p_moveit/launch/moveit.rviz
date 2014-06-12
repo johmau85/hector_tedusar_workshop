@@ -84,6 +84,27 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          asus_depth_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          asus_depth_optical_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          asus_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          asus_rgb_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          asus_rgb_optical_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
           base_link:
             Alpha: 1
             Show Axes: false
@@ -192,6 +213,27 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          asus_depth_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          asus_depth_optical_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          asus_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          asus_rgb_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          asus_rgb_optical_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
           base_link:
             Alpha: 1
             Show Axes: false
@@ -226,6 +268,20 @@ Visualization Manager:
         Show Robot Collision: false
         Show Robot Visual: true
       Value: true
+    - Class: rviz/TF
+      Enabled: false
+      Frame Timeout: 15
+      Frames:
+        All Enabled: true
+      Marker Scale: 1
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Tree:
+        {}
+      Update Interval: 0
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -241,7 +297,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 2.9965
+      Distance: 5.28218
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
@@ -253,10 +309,10 @@ Visualization Manager:
         Z: 2.23518e-07
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.179799
+      Pitch: 0.419799
       Target Frame: base_link
       Value: XYOrbit (rviz)
-      Yaw: 4.35855
+      Yaw: 3.97856
     Saved: ~
 Window Geometry:
   Displays:
