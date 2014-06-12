@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<package>
+  <name>shoring_behaviour</name>
+  <version>0.0.0</version>
+  <description>The shoring_behaviour package</description>
+  <maintainer email="johannes.maurer@ist.tugraz.at">Johannes Maurer</maintainer>
+  <license>BSD</license>
+
+  <!-- <url type="website">http://wiki.ros.org/cartesian_arm_controller</url> -->
+
+  <author email="johannes.maurer@ist.tugraz.at">Johannes Maurer</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>actionlib</build_depend>
+  <build_depend>laser_assembler</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>moveit_core</build_depend>
+  <build_depend>moveit_ros_planning</build_depend>
+  <build_depend>moveit_ros_planning_interface</build_depend>
+  <build_depend>shoring_msgs</build_depend>
+  <build_depend>control_msgs</build_depend>
+  <build_depend>tf</build_depend>
+
+  <run_depend>actionlib</run_depend>
+  <run_depend>laser_assembler</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>moveit_core</run_depend>
+  <run_depend>moveit_ros_planning</run_depend>
+  <run_depend>moveit_ros_planning_interface</run_depend>
+  <run_depend>shoring_msgs</run_depend>
+  <run_depend>control_msgs</run_depend>
+  <run_depend>tf</run_depend>
+
+
+  <export>
+
+  </export>
+</package>

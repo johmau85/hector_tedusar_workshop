@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="costmap_topic" default="/cost_map"/>
+    <arg name="costmap_config" default="$(find tedusar_navigation)/config/costmap.yaml"/>
+    <arg name="dist_for_goal_reached" default="0.3"/>
+    <arg name="security_constant" default="0.6"/>
+    
+    <node pkg="tf" type="static_transform_publisher" name="tower_link_broadcaster" args="0 -0.50 0.2 0 0 0 base_link tower 100" />
+
+    <node pkg="shoring_behaviour" type="shoring_behaviour_node" name="shoring_behaviour" output="screen">
+    </node>
+
+</launch> 
