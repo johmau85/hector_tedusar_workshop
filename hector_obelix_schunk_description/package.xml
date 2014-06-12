@@ -1,0 +1,26 @@
+<package>
+  <name>hector_obelix_schunk_description</name>
+  <version>0.5.4</version>
+  <description>This package contains the description of the Team Hector Obelix UGV with a mounted Schunk arm on top</description>
+ 
+  <license>LGPL</license>
+
+  <url type="website">http://ros.org/wiki/hector_obelix_schunk_description</url>
+  <!-- <url type="bugtracker"></url> -->
+
+  <maintainer email="kohlbrecher@sim.tu-darmstadt.de">Stefan Kohlbrecher</maintainer>
+  <author email="kohlbrecher@sim.tu-darmstadt.de">Stefan Kohlbrecher</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>gazebo_ros</run_depend>
+  <run_depend>hector_tracked_vehicles_description</run_depend>
+  <run_depend>schunk_description</run_depend>
+
+  <test_depend>gtest</test_depend>
+  <test_depend>urdfdom</test_depend>
+
+  <export>
+    <gazebo_ros gazebo_media_path="${prefix}"/>
+  </export>
+</package>

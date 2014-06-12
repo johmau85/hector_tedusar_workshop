@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+
+<robot name="obelix_ugv"
+    xmlns:xacro="http://www.ros.org/wiki/xacro"
+    xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor"
+    xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller"
+    xmlns:interface="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface">
+    
+    <!-- Included URDF Files -->
+    <include filename="$(find hector_tracked_vehicles_description)/urdf/obelix_ugv_base.urdf.xacro" />
+    <obelix_ugv_macro />
+    
+    
+    
+    <include filename="$(find hector_tracked_vehicles_description)/urdf/obelix_2flipper_box.urdf.xacro" />
+      <!-- use for 2*2 flippers --> 
+   <obelix_flipper_macro parent="base_link" name="front" front="1">
+     <origin xyz="${base_size_x*0.5} ${base_size_y*0.5+wheel_offset_y+0.5*wheel_size_y}  0 " rpy="0 0 0"/>
+   </obelix_flipper_macro > 
+
+  <obelix_flipper_macro parent="base_link" name="back" front="-1">
+    <origin xyz="${-base_size_x*0.5} ${(base_size_y*0.5+wheel_offset_y+0.5*wheel_size_y)}  0  " rpy="0 0 0"/>
+  </obelix_flipper_macro >
+  
+  <xacro:include filename="$(find schunk_lwa4p)/calibration/calibration.urdf.xacro" />
+  <xacro:include filename="$(find cob_description)/urdf/common.xacro" />
+  <xacro:include filename="$(find schunk_description)/urdf/materials.urdf.xacro" />
+  <xacro:include filename="$(find cob_description)/gazebo/gazebo.urdf.xacro" />
+
+  <xacro:include filename="$(find schunk_description)/urdf/lwa4p/lwa4p.urdf.xacro" />
+   
+   <!--<xacro:schunk_lwa4p parent="base_link" name="arm">
+     <origin xyz="0 0 0" rpy="0 0 0"/>
+   </xacro:schunk_lwa4p>
+   -->
+<!--   <xacro:schunk_lwa4p name="arm" parent="base_link">
+     <origin xyz="0 0 0.5" rpy="0 0 0" />
+   </xacro:schunk_lwa4p>-->
+   
+   
+     <!-- arm -->
+  <xacro:schunk_lwa4p name="arm" parent="base_link">
+    <origin xyz="0 0 0.1" rpy="0 0 0" />
+  </xacro:schunk_lwa4p>
+  
+  <xacro:include filename="$(find schunk_lwa4p_control)/urdf/schunk_wsg_50.urdf.xacro" />
+  
+  <xacro:wsg_50_xacro name="gripper" parent="arm_6_link">
+    <origin xyz="0 0 0.085" rpy="0 0 1.570796" />
+  </xacro:wsg_50_xacro>
+  
+  <xacro:include filename="$(find hector_sensors_description)/urdf/asus_camera.urdf.xacro" />
+  
+  <xacro:asus_camera_model name="asus" parent="gripper_base_link">
+    <origin xyz="-0.02 0.055 0.035" rpy="0 -1.570796 -1.570796" />
+  </xacro:asus_camera_model>
+
+  
+</robot>
