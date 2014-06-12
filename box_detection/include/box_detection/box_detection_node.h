@@ -18,6 +18,7 @@
 #include <sensor_msgs/PointCloud.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Vector3.h>
 #include <moveit_msgs/PlanningScene.h>
 #include <box_detection/BoxDetectionAction.h>
 
@@ -37,6 +38,7 @@ private:
     {
         std::string name_;
         geometry_msgs::PoseStamped pose_;
+        geometry_msgs::Vector3 size_;
     };
 
     void boxDetectionActionGoalCallback();
@@ -55,7 +57,6 @@ private:
     void clusterizeCloud(const PclPointCloud::ConstPtr & cloud, std::vector<pcl::PointIndices> & cluster_indices);
     bool checkClusterForBox(const PclPointCloud::ConstPtr & cloud);
     const Box & createBox(const PclPointCloud::ConstPtr & cloud);
-    void publishBoxCloud(const Box & box, const PclPointCloud::ConstPtr & cloud);
     double computeArea(const PclPointCloud::ConstPtr & cloud);
     void publishCollisionObject(const Box & box);
     void publishActionFeedback(const Box & box);
@@ -70,7 +71,6 @@ private:
     ros::Time start_time_;
     std::vector<Box> boxes_;
     sensor_msgs::PointCloud plane_cloud_;
-    moveit_msgs::PlanningScene planning_scene_;
     unsigned int box_counter_;
 };
 
