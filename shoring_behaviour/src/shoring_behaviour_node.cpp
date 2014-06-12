@@ -109,6 +109,17 @@ void ShoringBehaviour::init()
     place_pose.pose.position.y =  0.0;
     place_poses_.push_back(place_pose);
 
+    // fourth layer
+    place_pose.pose.position.x =  0.0;
+    place_pose.pose.position.y = -0.11;
+    place_pose.pose.position.z += 0.10;
+    place_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0.0, M_PI, 0.0);
+    place_poses_.push_back(place_pose);
+
+    place_pose.pose.position.x =  0.0;
+    place_pose.pose.position.y =  0.11;
+    place_poses_.push_back(place_pose);
+
     display_publisher_ = nh_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
 
 }
@@ -137,7 +148,7 @@ void ShoringBehaviour::executePlaceBlockCB(const shoring_msgs::PlaceBlockGoalCon
     }
 
     // move arm down
-    moveArmCartesian(pre_place_pose, place_pose);
+    moveArmCartesian(place_pose);
 
     if (place_block_action_server_.isPreemptRequested() || !ros::ok())
     {
@@ -154,7 +165,7 @@ void ShoringBehaviour::executePlaceBlockCB(const shoring_msgs::PlaceBlockGoalCon
     }
 
     // move arm up
-    moveArmCartesian(place_pose, pre_place_pose);
+    moveArmCartesian(pre_place_pose);
 
     shoring_msgs::PlaceBlockResult result;
     place_block_action_server_.setSucceeded(result);
@@ -182,7 +193,7 @@ void ShoringBehaviour::moveToPose(geometry_msgs::Pose pose)
     move_group_->execute(my_plan);
     move_group_->clearPoseTarget();
 
-    sleep(5.0);
+    sleep(0.1);
 }
 
 void ShoringBehaviour::openGripper()
@@ -202,11 +213,10 @@ void ShoringBehaviour::openGripper()
     }
 }
 
-void ShoringBehaviour::moveArmCartesian(geometry_msgs::Pose point_1, geometry_msgs::Pose point_2)
+void ShoringBehaviour::moveArmCartesian(geometry_msgs::Pose point)
 {
     std::vector<geometry_msgs::Pose> waypoints;
-    waypoints.push_back(point_1);
-    waypoints.push_back(point_2);
+    waypoints.push_back(point);
 
     moveit_msgs::RobotTrajectory trajectory;
     double fraction = move_group_->computeCartesianPath(waypoints,
@@ -230,7 +240,7 @@ void ShoringBehaviour::moveArmCartesian(geometry_msgs::Pose point_1, geometry_ms
     plan.trajectory_ = smooth_trajectory;
 
     move_group_->execute(plan);
-    sleep(5.0);
+    sleep(0.1);
 }
 
 } // end namespace shoring_bahaviour

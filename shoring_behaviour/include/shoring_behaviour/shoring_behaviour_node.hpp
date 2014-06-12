@@ -92,7 +92,7 @@ private:
 
     void moveToPose(geometry_msgs::Pose pose);
 
-    void moveArmCartesian(geometry_msgs::Pose point_1, geometry_msgs::Pose point_2);
+    void moveArmCartesian(geometry_msgs::Pose point);
 
     void openGripper();
 

@@ -24,7 +24,10 @@ void SchunkTeleopNode::init()
         &SchunkTeleopNode::joyCB, this);
 
     if (parameters_.have_gripper_)
+    {
         gripper_command_ac_.reset(new GripperCommandActionClient("/gripper_controller/gripper_cmd", true));
+        grasping_done_pub_ = nh_.advertise<std_msgs::Empty>("grasping_done", 1);
+    }
 }
 
 void SchunkTeleopNode::loadParameters()
@@ -52,6 +55,7 @@ void SchunkTeleopNode::loadParameters()
     {
         getRequiredParameter(private_nh, "button_gripper_grasp", parameters_.button_gripper_grasp_id_);
         getRequiredParameter(private_nh, "button_gripper_release", parameters_.button_gripper_release_id_);
+        getRequiredParameter(private_nh, "button_grasp_done", parameters_.button_grasp_done_id_);
     }
 
     getRequiredParameter(private_nh, "axis_translation_x", parameters_.axis_translation_x_id_);
@@ -109,6 +113,8 @@ void SchunkTeleopNode::joyCB(const sensor_msgs::Joy::ConstPtr & joy)
             sendGripperCommand(parameters_.gripper_release_position_, parameters_.gripper_release_effort_);
         else if (joy->buttons.at(parameters_.button_gripper_grasp_id_))
             sendGripperCommand(parameters_.gripper_grasp_position_, parameters_.gripper_grasp_effort_);
+        else if (joy->buttons.at(parameters_.button_grasp_done_id_))
+            sendGraspDone();
     }
 
     if (have_vel_commands)
@@ -144,6 +150,12 @@ double SchunkTeleopNode::limit(double value, double min, double max)
     if (value > max)
       return max;
     return value;
+}
+
+void SchunkTeleopNode::sendGraspDone()
+{
+    std_msgs::Empty msg;
+    grasping_done_pub_.publish(msg);
 }
 
 template <typename T>
