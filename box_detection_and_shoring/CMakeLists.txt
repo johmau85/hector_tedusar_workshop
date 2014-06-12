@@ -8,7 +8,14 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
   actionlib_msgs
   box_detection
+  shoring_msgs
   roscpp
+  tf
+  moveit_core
+  moveit_ros_planning
+  moveit_ros_planning_interface
+  controller_manager_msgs
+  std_msgs
 )
 
 ## System dependencies are found with CMake's conventions
