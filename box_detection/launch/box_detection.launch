@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 <launch>
-  <include file="$(find box_detection)/launch/utils.launch" />
-  <node name="box_detection" pkg="box_detection" type="box_detection" output="screen"/>
+  <arg name="point_cloud_topic" default="/camera/depth/points" />
+  
+  <node name="box_detection" pkg="box_detection" type="box_detection" output="screen">
+    <param name="point_cloud_topic" value="$(arg point_cloud_topic)" />
+  </node>
 </launch>
 

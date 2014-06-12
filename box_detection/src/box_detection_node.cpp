@@ -48,6 +48,9 @@ BoxDetectionNode::Parameters::Parameters()
 BoxDetectionNode::BoxDetectionNode()
     : box_detection_as_(nh_, "detect_boxes", false), plane_intensity_(0), box_counter_(0)
 {
+    ros::NodeHandle private_nh("~");
+    private_nh.param<std::string>("point_cloud_topic", parameters_.point_cloud_topic_, parameters_.point_cloud_topic_);
+
     pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
     if (parameters_.have_collision_object_publisher_)
